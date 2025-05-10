@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: TeachAgent
+  datasource:
+    url: jdbc:mysql://175.24.205.213:3306/teach_agent?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: username
+    password: lmjnb666
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  ai:
+    openai:
+      api-key: sk-Lf43HULS25rPLbjE2WyId3bfeVYBbLRrLKZVdHxf11fMsOde
+      base-url: https://hk.xty.app
+      chat: doubao-1.5-pro-256k
+      image:
+        api-key: sk-Lf43HULS25rPLbjE2WyId3bfeVYBbLRrLKZVdHxf11fMsOde
+        base-url: https://hk.xty.app
+      audio:
+        speech:
+          api-key: sk-Lf43HULS25rPLbjE2WyId3bfeVYBbLRrLKZVdHxf11fMsOde
+          base-url: https://hk.xty.app
+  servlet:
+    multipart:
+      max-file-size: 50MB
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
