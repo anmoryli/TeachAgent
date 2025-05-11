@@ -27,4 +27,7 @@ public interface LessonPlanMapper {
 
     @Update("update LessonPlan set teacher_id = #{teacherId}, course_id = #{courseId}, title = #{title}, content = #{content} where lesson_plan_id = #{lessonPlanId}")
     int update(Integer lessonPlanId, int teacherId, int courseId, String title, String content);
+
+    @Select("select lesson_plan_id from LessonPlan where course_id = #{courseId} limit 1")
+    int getLessonPlanIdByCourseId(int courseId);
 }

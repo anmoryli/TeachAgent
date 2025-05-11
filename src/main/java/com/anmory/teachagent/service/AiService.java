@@ -67,4 +67,31 @@ public class AiService {
                 .call()
                 .content();
     }
+
+    public String getStuAnswer(String question, HttpServletRequest request) {
+        String systemPrompt = promptService.selectByPromptId(4).getPromptText();
+        return ChatClient.create(openAiChatModel)
+                .prompt(question)
+                .system(systemPrompt)
+                .call()
+                .content();
+    }
+
+    public String judgeAnswer(int studentId, String question, String answer, HttpServletRequest request) {
+        String systemPrompt = promptService.selectByPromptId(5).getPromptText();
+        return ChatClient.create(openAiChatModel)
+                .prompt("学生id" + studentId + "问题：" + question + "\n" + "参考答案：" + answer + "\n" + "请判断参考答案并给出建议")
+                .system(systemPrompt)
+                .call()
+                .content();
+    }
+
+    public String giveSuggest(int studentId, String question, String answer, HttpServletRequest request) {
+        String systemPrompt = promptService.selectByPromptId(6).getPromptText();
+        return ChatClient.create(openAiChatModel)
+                .prompt("学生id" + studentId + "问题：" + question + "\n" + "参考答案：" + answer + "\n" + "请给出建议")
+                .system(systemPrompt)
+                .call()
+                .content();
+    }
 }

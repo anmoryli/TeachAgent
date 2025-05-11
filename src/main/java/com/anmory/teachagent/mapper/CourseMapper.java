@@ -27,4 +27,7 @@ public interface CourseMapper {
 
     @Update("update Course set course_name = #{courseName}, discipline = #{discipline}, description = #{description} where course_id = #{courseId}")
     int update(int courseId, String courseName, String discipline, String description);
+
+    @Select("select course_id from Course where course_name = #{courseName}")
+    int getCourseIdByName(String courseName);
 }

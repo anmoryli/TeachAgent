@@ -25,4 +25,8 @@ public class QuestionService {
     public List<Question> selectByLessonPlanId(int lessonPlanId) {
         return questionMapper.selectByLessonPlanId(lessonPlanId);
     }
+
+    public String getQuestionTextById(int questionId) {
+        return questionMapper.getQuestionTextById(questionId);
+    }
 }

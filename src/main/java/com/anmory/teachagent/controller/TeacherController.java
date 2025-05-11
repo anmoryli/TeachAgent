@@ -79,6 +79,7 @@ public class TeacherController {
     public List<Question> generateQuestions(Integer lessonPlanId, String questionType, String knowledgePoint, int quantity,
                                             HttpServletRequest request) {
         log.info(String.valueOf(lessonPlanId));
+        chatMemoryService.insert(lessonPlanId, "生成问题", aiService.getQuestion(questionType, knowledgePoint, request));
         for(int i = 0; i < quantity; i++) {
             questionService.insert(lessonPlanId, aiService.getQuestion(questionType, knowledgePoint, request), questionType,
                     aiService.getReferenceAnswer(aiService.getQuestion(questionType, knowledgePoint, request), request),

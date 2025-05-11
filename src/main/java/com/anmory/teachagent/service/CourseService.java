@@ -37,4 +37,8 @@ public class CourseService {
     public int update(int courseId, String courseName, String discipline, String description) {
         return courseMapper.update(courseId, courseName, discipline, description);
     }
+
+    public int getCourseIdByName(String courseName) {
+        return courseMapper.getCourseIdByName(courseName);
+    }
 }

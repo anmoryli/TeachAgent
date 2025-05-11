@@ -33,4 +33,8 @@ public class LessonPlanService {
     public LessonPlan selectById(Integer lessonPlanId) {
         return lessonPlanMapper.selectOne(lessonPlanId);
     }
+
+    public int getLessonPlanIdByCourseId(int courseId) {
+        return lessonPlanMapper.getLessonPlanIdByCourseId(courseId);
+    }
 }
