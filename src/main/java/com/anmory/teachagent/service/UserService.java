@@ -5,6 +5,8 @@ import com.anmory.teachagent.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @author Anmory
  * @description TODO
@@ -30,5 +32,9 @@ public class UserService {
 
     public int deleteByName(String username) {
         return userMapper.deleteByName(username);
+    }
+
+    public List<User> selectAll() {
+        return userMapper.selectAll();
     }
 }

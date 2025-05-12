@@ -18,7 +18,7 @@ public class PracticeRecordService {
     @Autowired
     PracticeRecordMapper practiceRecordMapper;
 
-    public int insert(int studentId, int questionId, String submittedAnswer, int isCorrect, String errorAnalysis) {
+    public int insert(int studentId, int questionId, String submittedAnswer, Boolean isCorrect, String errorAnalysis) {
         return practiceRecordMapper.insert(studentId, questionId, submittedAnswer, isCorrect, errorAnalysis);
     }
 

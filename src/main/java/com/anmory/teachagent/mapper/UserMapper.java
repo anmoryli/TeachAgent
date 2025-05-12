@@ -3,6 +3,8 @@ package com.anmory.teachagent.mapper;
 import com.anmory.teachagent.model.User;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 /**
  * @author Anmory/李梦杰
  * @description TODO
@@ -22,4 +24,7 @@ public interface UserMapper {
 
     @Delete("delete from User where username = #{username}")
     int deleteByName(String username);
+
+    @Select("select * from User")
+    List<User> selectAll();
 }

@@ -94,4 +94,13 @@ public class AiService {
                 .call()
                 .content();
     }
+
+    public String getQuestionType(String q, HttpServletRequest request) {
+        String systemPrompt = promptService.selectByPromptId(7).getPromptText();
+        return ChatClient.create(openAiChatModel)
+                .prompt(q)
+                .system(systemPrompt)
+                .call()
+                .content();
+    }
 }

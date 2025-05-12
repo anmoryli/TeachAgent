@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author Anmory
@@ -34,6 +37,8 @@ public class StudentController {
     LessonPlanService lessonPlanService;
     @Autowired
     QuestionService questionService;
+    @Autowired
+    PracticeRecordService practiceRecordService;
     @RequestMapping("/askQuestion")
     public String askQuestion(String courseName, String questionText, HttpServletRequest request) {
         // 获取用户ID
@@ -62,23 +67,35 @@ public class StudentController {
         int userId = user.getUserId();
         // 获取用户历史问题
         List<ChatMemory> chatMemoryList = chatMemoryService.selectByUserId(userId);
-        // 获取用户历史问题
         StringBuilder sb = new StringBuilder();
         for (ChatMemory chatMemory : chatMemoryList) {
             sb.append(chatMemory.getQuestionText()).append("\n");
         }
+        // 获取课程和课时计划ID
         int courseId = courseService.getCourseIdByName(courseName);
         int lessonPlanId = lessonPlanService.getLessonPlanIdByCourseId(courseId);
-        String question = sb.toString() + "生成一个关于" + courseName + "的" + knowledgePoint + "的题目";
-        for(int i = 0; i < quantity; i++) {
-            Question que = new Question();
-            String q = aiService.getQuestion(question, knowledgePoint, request);
-            que.setQuestionText(q);
-            que.setKnowledgePoint(knowledgePoint);
-            que.setReferenceAnswer(aiService.getReferenceAnswer(aiService.getQuestion(question, knowledgePoint, request), request));
-            que.setLessonPlanId(lessonPlanId);
-            questions.add(que);
+        String question = "生成一个关于" + courseName + "的" + knowledgePoint + "的题目";
+        // 用线程池并行生成问题
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(quantity, 10)); // 限制最大线程数，防止爆
+        List<CompletableFuture<Question>> futures = new ArrayList<>();
+        for (int i = 0; i < quantity; i++) {
+            CompletableFuture<Question> future = CompletableFuture.supplyAsync(() -> {
+                String ans = String.valueOf(questionService.generateQuestionAsync(question, knowledgePoint, request, lessonPlanId));
+                return questionService.generateQuestionAsync(question, knowledgePoint, request, lessonPlanId).join();
+            }, executor);
+            futures.add(future);
         }
+        // 合并结果
+        for (CompletableFuture<Question> future : futures) {
+            try {
+                questions.add(future.get());
+                questionService.insert(lessonPlanId, question, future.get().getQuestionType(), aiService.getReferenceAnswer(question, request), knowledgePoint);
+
+            } catch (Exception e) {
+                e.printStackTrace(); // 出错打印日志，防炸
+            }
+        }
+        executor.shutdown(); // 关线程池
         return questions;
     }
 
@@ -95,6 +112,7 @@ public class StudentController {
         practiceRecord.setIsCorrect(isCorrect);
         String errorAnalysis = aiService.giveSuggest(userId, questionText, submittedAnswer, request);
         practiceRecord.setErrorAnalysis(errorAnalysis);
+        practiceRecordService.insert(userId, questionId, submittedAnswer, isCorrect, errorAnalysis);
         return practiceRecord;
     }
 }
