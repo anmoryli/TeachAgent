@@ -66,6 +66,33 @@
             <version>3.0.4</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- 添加开源模型依赖 -->
+        <dependency>
+            <groupId>org.chatglm</groupId>
+            <artifactId>chatglm-java-sdk</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        
+        <!-- 本地向量数据库依赖 -->
+        <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+            <version>2.3.2</version>
+        </dependency>
+        
+        <!-- HTTP客户端依赖，用于调用模型API -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.2.1</version>
+        </dependency>
+        
+        <!-- JSON处理依赖 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
