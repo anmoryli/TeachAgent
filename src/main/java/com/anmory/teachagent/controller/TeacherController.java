@@ -203,7 +203,7 @@ public class TeacherController {
                 Map<String, Object> error = new HashMap<>();
                 error.put("knowledgePoint", stat.getKnowledgePoint());
                 error.put("correctRate", stat.getCorrectRate());
-                error.put("errorCount", stat.getTotalCount() - stat.getCorrectCount());
+                error.put("errorRate", 1 - stat.getCorrectRate()); // 使用正确率计算错误率
                 errors.add(error);
             }
         }
@@ -219,22 +219,21 @@ public class TeacherController {
         log.info("获取教学效率指标: 课程ID = {}", courseId);
         User user = (User) request.getSession().getAttribute("session_user_key");
         
-        List<Statistics> stats = statisticsService.getCourseStatistics(courseId);
+        int studentId = 1; // 使用固定值，保持studentId作为唯一标识
+        List<Statistics> stats = statisticsService.getCourseStuStatistics(courseId, studentId);
         
-        double totalCorrect = 0;
-        double totalQuestions = 0;
+        double totalCorrectRate = 0;
         for (Statistics stat : stats) {
-            totalCorrect += stat.getCorrectCount();
-            totalQuestions += stat.getTotalCount();
+            totalCorrectRate += stat.getCorrectRate();
         }
         
-        double overallCorrectRate = totalQuestions > 0 ? totalCorrect / totalQuestions : 0;
+        double overallCorrectRate = stats.isEmpty() ? 0 : totalCorrectRate / stats.size();
         
         Map<String, Object> result = new HashMap<>();
         result.put("teacherId", user.getUserId());
         result.put("courseId", courseId);
         result.put("overallCorrectRate", overallCorrectRate);
-        result.put("totalStudents", stats.size());
+        result.put("studentId", studentId); // 保留studentId信息
         result.put("knowledgePointsCount", stats.stream()
                 .map(Statistics::getKnowledgePoint)
                 .distinct()

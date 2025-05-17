@@ -3,6 +3,7 @@ package com.anmory.teachagent.service;
 import com.anmory.teachagent.mapper.KnowledgeDocumentMapper;
 import com.anmory.teachagent.model.KnowledgeDocument;
 import io.milvus.client.MilvusServiceClient;
+import io.milvus.common.datatype.DataType;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.FieldType;
@@ -73,20 +74,20 @@ public class KnowledgeBaseService {
         try {
             FieldType idField = FieldType.newBuilder()
                 .withName("document_id")
-                .withDataType(io.milvus.param.DataType.Int64)
+                .withDataType(DataType.Int64)
                 .withPrimaryKey(true)
                 .withAutoID(false)
                 .build();
             
             FieldType vectorField = FieldType.newBuilder()
                 .withName("vector")
-                .withDataType(io.milvus.param.DataType.FloatVector)
+                .withDataType(DataType.FloatVector)
                 .withDimension(vectorDimension)
                 .build();
             
             FieldType courseIdField = FieldType.newBuilder()
                 .withName("course_id")
-                .withDataType(io.milvus.param.DataType.Int64)
+                .withDataType(DataType.Int64)
                 .build();
             
             CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
