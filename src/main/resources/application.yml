@@ -25,3 +25,15 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 本地知识库配置
+knowledge-base:
+  base-path: /data/knowledge-base
+  course-materials: /data/knowledge-base/embedded-linux
+  vector-dimension: 1536
+
+# 开源模型配置
+chatglm:
+  api-key: your-api-key-here
+  base-url: http://localhost:8000
+  model-name: chatglm-turbo

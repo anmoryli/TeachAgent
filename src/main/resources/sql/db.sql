@@ -160,8 +160,23 @@ create table Prompt(
     updated_time datetime DEFAULT now() ON UPDATE now()
 );
 
+CREATE TABLE KnowledgeDocument (
+    document_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    chapter_section VARCHAR(50),
+    keywords VARCHAR(255),
+    course_id BIGINT NOT NULL,
+    vector_embedding BLOB, -- 向量嵌入存储为二进制
+    create_time datetime DEFAULT now(),
+    updated_time datetime DEFAULT now() ON UPDATE now(),
+    FOREIGN KEY (course_id) REFERENCES Course(course_id) ON DELETE CASCADE
+);
+
 -- 索引优化
 CREATE INDEX idx_user_role ON User(role);
 CREATE INDEX idx_lesson_plan_teacher ON LessonPlan(teacher_id);
 CREATE INDEX idx_practice_student ON PracticeRecord(student_id);
 CREATE INDEX idx_activity_log_action_time ON ActivityLog(action_time);
+CREATE INDEX idx_knowledge_document_course ON KnowledgeDocument(course_id);
