@@ -47,8 +47,6 @@ public class TeacherController {
     @Autowired
     ChatMemoryService chatMemoryService;
     @Autowired
-    OpenSourceAiService openSourceAiService;
-    @Autowired
     KnowledgeBaseService knowledgeBaseService;
     @RequestMapping("/uploadFile")
     public boolean upload(@RequestParam("file") MultipartFile file) throws IOException {
@@ -132,7 +130,7 @@ public class TeacherController {
                        "课时教学计划，涵盖以下知识点：" + knowledgePoints + 
                        "。请包含每个课时的教学内容、实践活动和时间分配。";
         
-        String plan = openSourceAiService.getLessonPlan(prompt, request);
+        String plan = aiService.getLessonPlan(prompt, request);
         
         chatMemoryService.insert(user.getUserId(), prompt, plan);
         lessonPlanService.insert(user.getUserId(), 
@@ -156,8 +154,8 @@ public class TeacherController {
         
         for (String questionType : questionTypes) {
             for (int i = 0; i < quantity / questionTypes.length; i++) {
-                String questionText = openSourceAiService.getQuestion(questionType, knowledgePoint, request);
-                String referenceAnswer = openSourceAiService.getReferenceAnswer(questionText, request);
+                String questionText = aiService.getQuestion(questionType, knowledgePoint, request);
+                String referenceAnswer = aiService.getReferenceAnswer(questionText, request);
                 
                 questionService.insert(lessonPlanId, questionText, questionType, 
                                       referenceAnswer, knowledgePoint);

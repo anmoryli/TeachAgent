@@ -25,6 +25,8 @@ public class AiService {
     ChatMemoryService chatMemoryService;
     @Autowired
     PromptService promptService;
+    @Autowired
+    KnowledgeBaseService knowledgeBaseService;
 
     public String getLessonPlan(String prompt, HttpServletRequest request) {
         String systemPrompt = promptService.selectByPromptId(1).getPromptText();
@@ -35,9 +37,16 @@ public class AiService {
         for (ChatMemory chatMemory : chatMemoryList) {
             previousChatMemory += chatMemory.getQuestionText() + "\n";
         }
-        prompt = previousChatMemory + prompt;
+        
+        String knowledgeContext = knowledgeBaseService.getKnowledgeContext(prompt, 1, 5);
+        
+        String enhancedPrompt = previousChatMemory + prompt;
+        if (!knowledgeContext.isEmpty()) {
+            enhancedPrompt = "基于以下知识库内容生成课程计划：\n\n" + knowledgeContext + "\n\n用户请求：" + enhancedPrompt;
+        }
+        
         return ChatClient.create(openAiChatModel)
-                .prompt(prompt)
+                .prompt(enhancedPrompt)
                 .system(systemPrompt)
                 .call()
                 .content();
@@ -52,8 +61,16 @@ public class AiService {
         for (ChatMemory chatMemory : chatMemoryList) {
             previousChatMemory += chatMemory.getQuestionText() + "\n";
         }
+        
+        String knowledgeContext = knowledgeBaseService.getKnowledgeContext(knowledgePoint, 1, 3);
+        
+        String enhancedPrompt = "问题类型：" + questionType + "\n" + "知识点：" + knowledgePoint + "\n" + "请生成一个" + questionType + "类型的问题，关于" + knowledgePoint + "。";
+        if (!knowledgeContext.isEmpty()) {
+            enhancedPrompt = "基于以下知识库内容生成问题：\n\n" + knowledgeContext + "\n\n" + enhancedPrompt;
+        }
+        
         return ChatClient.create(openAiChatModel)
-                .prompt("问题类型：" + questionType + "\n" + "知识点：" + knowledgePoint + "\n" + "请生成一个" + questionType + "类型的问题，关于" + knowledgePoint + "。")
+                .prompt(enhancedPrompt)
                 .system(systemPrompt)
                 .call()
                 .content();

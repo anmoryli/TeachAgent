@@ -11,6 +11,8 @@ import io.milvus.param.index.CreateIndexParam;
 import io.milvus.response.SearchResultsWrapper;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -119,16 +121,26 @@ public class KnowledgeBaseService {
         File directory = new File(courseMaterialsPath);
         if (directory.exists() && directory.isDirectory()) {
             for (File file : directory.listFiles()) {
-                if (file.isFile() && (file.getName().endsWith(".txt") || file.getName().endsWith(".md"))) {
-                    String content = new String(Files.readAllBytes(file.toPath()));
+                if (file.isFile()) {
+                    String content;
+                    String fileName = file.getName();
+                    
+                    if (fileName.toLowerCase().endsWith(".pdf")) {
+                        content = extractTextFromPdf(file);
+                    } 
+                    else if (fileName.endsWith(".txt") || fileName.endsWith(".md")) {
+                        content = new String(Files.readAllBytes(file.toPath()));
+                    } else {
+                        log.info("跳过不支持的文件类型: {}", fileName);
+                        continue;
+                    }
                     
                     KnowledgeDocument document = new KnowledgeDocument();
-                    document.setTitle(file.getName());
+                    document.setTitle(fileName);
                     document.setContent(content);
                     document.setFilePath(file.getAbsolutePath());
                     document.setCourseId(courseId);
                     
-                    String fileName = file.getName();
                     if (fileName.contains("-")) {
                         document.setChapterSection(fileName.substring(0, fileName.indexOf("-")));
                     }
@@ -137,7 +149,7 @@ public class KnowledgeBaseService {
                     
                     knowledgeDocumentMapper.insert(document);
                     
-                    log.info("导入文档: {}", file.getName());
+                    log.info("导入文档: {}", fileName);
                 }
             }
         } else {
@@ -147,11 +159,26 @@ public class KnowledgeBaseService {
     }
     
     /**
+     * 从PDF文件中提取文本
+     * @param file PDF文件
+     * @return 提取的文本内容
+     */
+    private String extractTextFromPdf(File file) throws IOException {
+        try (PDDocument document = PDDocument.load(file)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            return stripper.getText(document);
+        }
+    }
+    
+    /**
      * 生成文本嵌入向量
+     * 当前使用随机向量作为占位符，将由另一团队成员提供实际实现
+     * 
      * @param text 文本内容
      * @return 嵌入向量
      */
     private byte[] generateEmbedding(String text) {
+        log.info("生成文本嵌入向量（占位实现）：文本长度 = {}", text.length());
         byte[] embedding = new byte[vectorDimension * 4]; // 每个float占4字节
         new Random().nextBytes(embedding);
         return embedding;
@@ -185,5 +212,25 @@ public class KnowledgeBaseService {
     public String getDocumentContent(int documentId) {
         KnowledgeDocument document = knowledgeDocumentMapper.selectByDocumentId(documentId);
         return document != null ? document.getContent() : "";
+    }
+    
+    /**
+     * 为AI服务准备知识库上下文
+     * 根据查询从知识库中检索相关内容，并格式化为可用于增强AI提示的文本
+     * 
+     * @param query 查询文本
+     * @param courseId 课程ID
+     * @param limit 返回结果数量限制
+     * @return 格式化的知识库上下文
+     */
+    public String getKnowledgeContext(String query, int courseId, int limit) {
+        List<KnowledgeDocument> relevantDocs = searchRelevantDocuments(query, courseId, limit);
+        if (relevantDocs.isEmpty()) {
+            return "";
+        }
+        
+        return relevantDocs.stream()
+            .map(doc -> "### " + doc.getTitle() + "\n" + doc.getContent())
+            .collect(Collectors.joining("\n\n"));
     }
 }
