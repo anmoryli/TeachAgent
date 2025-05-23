@@ -18,8 +18,8 @@ public class UserService {
     @Autowired
     UserMapper userMapper;
 
-    public int insert(String username, String password, String role, String email) {
-        return userMapper.insert(username, password, role, email);
+    public int insert(String username, String password, String role, String email, String realName, String code) {
+        return userMapper.insert(username, password, role, email, realName, code);
     }
 
     public User selectByName(String username) {

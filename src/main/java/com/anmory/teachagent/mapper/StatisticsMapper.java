@@ -14,6 +14,18 @@ import java.util.List;
 
 @Mapper
 public interface StatisticsMapper {
-    @Select("select * from Statistics where course_id = #{courseId} and student_id = #{studentId}")
+    @Select("""
+            SELECT
+                pr.student_id,
+                pr.question_id,
+                pr.submitted_answer,
+                pr.is_correct,
+                pr.error_analysis
+            FROM
+                PracticeRecord pr
+                    LEFT JOIN
+                Answer a ON pr.question_id = a.answer_id
+            WHERE
+                pr.is_correct = 0""")
     List<Statistics> getCourseStuStatistics(int courseId, int studentId);
 }

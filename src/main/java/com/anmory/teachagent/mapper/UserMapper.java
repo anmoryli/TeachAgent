@@ -6,15 +6,16 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 /**
- * @author Anmory/李梦杰
+ * @author Anmory
  * @description TODO
  * @date 2025-05-10 上午11:28
  */
 
 @Mapper
 public interface UserMapper {
-    @Insert("insert into User (username, password, role, email) values (#{username}, #{password}, #{role}, #{email})")
-    int insert(String username, String password, String role, String email);
+    @Insert("insert into User (username, password, role, email, real_name, code) values " +
+            "(#{username}, #{password}, #{role}, #{email}, #{realName}, #{code})")
+    int insert(String username, String password, String role, String email,String realName, String code);
 
     @Select("select * from User where username = #{username}")
     User selectByName(String username);

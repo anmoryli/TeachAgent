@@ -14,6 +14,8 @@ import java.util.Date;
 public class User {
     private int userId;
     private String username;
+    private String realName;
+    private String code;// 工号或者学号
     private String password;
     private String role;
     private String email;

@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * @author Anmory
- * @description TODO
+ * @description 管理员界面接口
  * @date 2025-05-10 下午9:48
  */
 
@@ -34,14 +34,30 @@ public class UserController {
         return true;
     }
 
+    @RequestMapping("/register")
+    public boolean register(String username, String password, String role, String email, String realName, String code) {
+        return userService.insert(username, password, role, email, realName, code) > 0;
+    }
+
     @RequestMapping("/viewUsers")
     public List<User> viewUsers() {
         return userService.selectAll();
     }
 
     @RequestMapping("/addUser")
-    public boolean addUser(String username, String password, String role, String email) {
-        return userService.insert(username, password, role, email) > 0;
+    public boolean addUser(String username, String password, String role, String email, String realName, String code) {
+        return userService.insert(username, password, role, email, realName, code) > 0;
+    }
+
+    @RequestMapping("/deleteUser")
+    public boolean deleteUser(String username) {
+        return userService.deleteByName(username) > 0;
+    }
+
+    @RequestMapping("/updateUser")
+    public boolean updateUser(String username, String password, String role, String email) {
+        User user = userService.selectByName(username);
+        return userService.update(user.getUserId(), username, password, role, email) > 0;
     }
 
     @RequestMapping("/viewResources")
@@ -51,6 +67,13 @@ public class UserController {
 
     @RequestMapping("/viewDashboard")
     public String viewDashboard() {
+        // TODO
         return "dashboard";
+    }
+
+    @RequestMapping("/exportResource")
+    public boolean exportResource(String title, String filePath, String materialType) {
+        // TODO
+        return materialService.insert(title, filePath, materialType) > 0;
     }
 }
