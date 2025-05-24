@@ -37,4 +37,20 @@ public class LessonPlanService {
     public int getLessonPlanIdByCourseId(int courseId) {
         return lessonPlanMapper.getLessonPlanIdByCourseId(courseId);
     }
+
+    public List<LessonPlan> selectByCourseName(String courseName) {
+        return lessonPlanMapper.selectByCourseName(courseName);
+    }
+
+    public LessonPlan selectOneByCourseName(String courseName) {
+        return lessonPlanMapper.selectOneByCourseName(courseName);
+    }
+
+    public List<LessonPlan> selectByLessonPlanName(String lessonPlanName) {
+        return lessonPlanMapper.selectByLessonPlanName(lessonPlanName);
+    }
+
+    public List<LessonPlan> selectByCourseId(int courseId) {
+        return lessonPlanMapper.selectByCourseId(courseId);
+    }
 }

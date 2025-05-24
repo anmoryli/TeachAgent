@@ -1,9 +1,6 @@
 package com.anmory.teachagent.controller;
 
-import com.anmory.teachagent.model.ChatMemory;
-import com.anmory.teachagent.model.PracticeRecord;
-import com.anmory.teachagent.model.Question;
-import com.anmory.teachagent.model.User;
+import com.anmory.teachagent.model.*;
 import com.anmory.teachagent.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +23,6 @@ import java.util.concurrent.Executors;
 @RequestMapping("/student")
 public class StudentController {
     @Autowired
-    ChatMemoryService chatMemoryService;
-    @Autowired
     CourseService courseService;
     @Autowired
     AnswerService answerService;
@@ -40,39 +35,29 @@ public class StudentController {
     @Autowired
     PracticeRecordService practiceRecordService;
     @RequestMapping("/askQuestion")
-    public String askQuestion(String courseName, String questionText, HttpServletRequest request) {
+    public String askQuestion(int courseId, String questionText, HttpServletRequest request) {
+        Course course = courseService.selectById(courseId);
         // 获取用户ID
         User user = (User) request.getSession().getAttribute("session_user_key");
         int userId = user.getUserId();
-        // 获取用户历史问题
-        List<ChatMemory> chatMemoryList = chatMemoryService.selectByUserId(userId);
-        // 获取用户历史问题
-        StringBuilder sb = new StringBuilder();
-        for (ChatMemory chatMemory : chatMemoryList) {
-            sb.append(chatMemory.getQuestionText()).append("\n");
-       }
-//        questionText = sb.toString() + "生成一个关于" + courseName + "的" + questionText;
-        questionText = "生成一个关于" + courseName + "的" + questionText;
+        questionText = "生成一个关于" + course.getCourseName() + "的" + questionText;
         String answer = aiService.getStuAnswer(questionText, request);
         answerService.insert(userId, questionText, answer);
-        chatMemoryService.insert(userId, questionText, answer);
         return answer;
     }
 
-    @RequestMapping("/getPracticeQuestions")
-    public List<Question> getPracticeQuestions(String courseName, String knowledgePoint, int quantity, HttpServletRequest request) {
-        List<Question> questions = new ArrayList<>();
-        // 获取用户ID
+    @RequestMapping("/getAllQuestionsByStudentId")
+    public List<Answer> getAllQuestionsByStudentId(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("session_user_key");
-        int userId = user.getUserId();
-        // 获取用户历史问题
-        List<ChatMemory> chatMemoryList = chatMemoryService.selectByUserId(userId);
-        StringBuilder sb = new StringBuilder();
-        for (ChatMemory chatMemory : chatMemoryList) {
-            sb.append(chatMemory.getQuestionText()).append("\n");
-        }
+        int studentId = user.getUserId();
+        return answerService.selectByStudentId(studentId);
+    }
+
+    @RequestMapping("/getPracticeQuestions")
+    public List<Question> getPracticeQuestions(int courseId, String knowledgePoint, int quantity, HttpServletRequest request) {
+        List<Question> questions = new ArrayList<>();
+        String courseName = courseService.selectById(courseId).getCourseName();
         // 获取课程和课时计划ID
-        int courseId = courseService.getCourseIdByName(courseName);
         int lessonPlanId = lessonPlanService.getLessonPlanIdByCourseId(courseId);
         String question = "生成一个关于" + courseName + "的" + knowledgePoint + "的题目";
         // 用线程池并行生成问题

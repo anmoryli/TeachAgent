@@ -30,4 +30,17 @@ public interface LessonPlanMapper {
 
     @Select("select lesson_plan_id from LessonPlan where course_id = #{courseId} limit 1")
     int getLessonPlanIdByCourseId(int courseId);
+
+    @Select("select * from LessonPlan where course_id = (select course_id from Course where course_name = #{courseName})")
+    List<LessonPlan> selectByCourseName(String courseName);
+
+    @Select("select * from LessonPlan where course_id = " +
+            "(select course_id from Course where course_name = #{courseName}) limit 1")
+    LessonPlan selectOneByCourseName(String courseName);
+
+    @Select("select * from LessonPlan where title = #{lessonPlanName}")
+    List<LessonPlan> selectByLessonPlanName(String lessonPlanName);
+
+    @Select("select * from LessonPlan where course_id = #{courseId}")
+    List<LessonPlan> selectByCourseId(int courseId);
 }

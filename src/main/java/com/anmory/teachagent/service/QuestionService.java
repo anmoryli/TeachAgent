@@ -51,4 +51,8 @@ public class QuestionService {
         que.setLessonPlanId(lessonPlanId);
         return CompletableFuture.completedFuture(que);
     }
+
+    public List<Question> selectAll() {
+        return questionMapper.selectAll();
+    }
 }

@@ -23,4 +23,7 @@ public interface QuestionMapper {
 
     @Select("select question_text from Question where Question.question_id = #{questionId}")
     String getQuestionTextById(int questionId);
+
+    @Select("select * from Question")
+    List<Question> selectAll();
 }

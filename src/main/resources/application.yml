@@ -8,15 +8,15 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   ai:
     openai:
-      api-key: sk-Lf43HULS25rPLbjE2WyId3bfeVYBbLRrLKZVdHxf11fMsOde
+      api-key: sk-fuacnJoLzVOp55Mq5PIFnpuYYemqwLDNdiyO8zW0j2fFZprd
       base-url: https://hk.xty.app
-      chat: doubao-1.5-pro-256k
+      chat: qwen-max
       image:
-        api-key: sk-Lf43HULS25rPLbjE2WyId3bfeVYBbLRrLKZVdHxf11fMsOde
+        api-key: sk-fuacnJoLzVOp55Mq5PIFnpuYYemqwLDNdiyO8zW0j2fFZprd
         base-url: https://hk.xty.app
       audio:
         speech:
-          api-key: sk-Lf43HULS25rPLbjE2WyId3bfeVYBbLRrLKZVdHxf11fMsOde
+          api-key: sk-fuacnJoLzVOp55Mq5PIFnpuYYemqwLDNdiyO8zW0j2fFZprd
           base-url: https://hk.xty.app
   servlet:
     multipart:

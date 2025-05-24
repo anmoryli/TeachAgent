@@ -22,6 +22,9 @@ public interface CourseMapper {
     @Select("select * from Course where course_name = #{courseName}")
     Course selectByName(String courseName);
 
+    @Select("select * from Course where course_id = #{courseId}")
+    Course selectById(int courseId);
+
     @Delete("delete from Course where course_name = #{courseName}")
     int deleteByName(String courseName);
 

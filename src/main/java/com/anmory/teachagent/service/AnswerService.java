@@ -5,6 +5,8 @@ import com.anmory.teachagent.model.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @author Anmory
  * @description TODO
@@ -23,5 +25,9 @@ public class AnswerService {
 
     public int insert(int studentId, String questionText, String answerText) {
         return answerMapper.insert(studentId, questionText, answerText);
+    }
+
+    public List<Answer> selectByStudentId(int studentId) {
+        return answerMapper.selectByStudentId(studentId);
     }
 }

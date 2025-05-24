@@ -41,4 +41,8 @@ public class CourseService {
     public int getCourseIdByName(String courseName) {
         return courseMapper.getCourseIdByName(courseName);
     }
+
+    public Course selectById(int courseId) {
+        return courseMapper.selectById(courseId);
+    }
 }

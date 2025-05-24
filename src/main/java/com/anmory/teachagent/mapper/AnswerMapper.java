@@ -5,6 +5,8 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 /**
  * @author Anmory/李梦杰
  * @description TODO
@@ -18,4 +20,7 @@ public interface AnswerMapper {
 
     @Insert("insert into Answer (student_id, question_text, answer_text) values (#{studentId}, #{questionText}, #{answerText})")
     int insert(int studentId, String questionText, String answerText);
+
+    @Select("select * from Answer where student_id = #{studentId}")
+    List<Answer> selectByStudentId(int studentId);
 }

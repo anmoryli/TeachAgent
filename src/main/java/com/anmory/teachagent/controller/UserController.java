@@ -5,8 +5,11 @@ import com.anmory.teachagent.model.User;
 import com.anmory.teachagent.service.MaterialService;
 import com.anmory.teachagent.service.UserService;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -17,6 +20,7 @@ import java.util.List;
  * @date 2025-05-10 下午9:48
  */
 
+@Slf4j
 @RestController
 @RequestMapping("/admin")
 public class UserController {
@@ -25,13 +29,15 @@ public class UserController {
     @Autowired
     MaterialService materialService;
     @RequestMapping("/login")
-    public boolean login(String username, String password, String role, HttpSession session){
+    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
+    public User login(String username, String password, String role, HttpSession session){
+        log.info("用户登录: username = {}, password = {}, role = {}", username, password, role);
         User user = userService.selectByName(username);
         if (user == null || !user.getPassword().equals(password) || !user.getRole().equals(role)) {
-            return false;
+            return null;
         }
         session.setAttribute("session_user_key", user);
-        return true;
+        return user;
     }
 
     @RequestMapping("/register")
