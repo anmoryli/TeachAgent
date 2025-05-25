@@ -11,9 +11,11 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 /**
  * @author Anmory
- * @description TODO
+ * @description RAG的过程应当在这里进行
  * @date 2025-05-10 下午3:36
  */
 
@@ -23,6 +25,8 @@ public class AiService {
     OpenAiChatModel openAiChatModel;
     @Autowired
     PromptService promptService;
+    @Autowired
+    RagService ragService;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
     public String getLessonPlan(String prompt, HttpServletRequest request,String conId) {
@@ -42,7 +46,7 @@ public class AiService {
                 .content();
     }
 
-    public String getQuestion(String questionType, String knowledgePoint, HttpServletRequest request) {
+    public String getQuestion(String questionType, String knowledgePoint, String prompt, HttpServletRequest request) {
         String systemPrompt = promptService.selectByPromptId(2).getPromptText();
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("session_user_key");
@@ -52,14 +56,17 @@ public class AiService {
                 .defaultAdvisors(messageChatMemoryAdvisor)
                 .build();
         return chatClient
-                .prompt("问题类型：" + questionType + "\n" + "知识点：" + knowledgePoint + "\n" + "请生成一个" + questionType + "类型的问题，关于" + knowledgePoint + "。")
+                .prompt("问题类型：" + questionType + "\n" + "知识点：" + knowledgePoint + "\n" + "请生成一个" + questionType + "类型的问题，关于" + knowledgePoint + "。" +
+                        "你需要参考的知识:" + prompt)
                 .system(systemPrompt)
                 .advisors(messageChatMemoryAdvisor)
                 .call()
                 .content();
     }
 
-    public String getReferenceAnswer(String question, HttpServletRequest request) {
+    public String getReferenceAnswer(String question, HttpServletRequest request) throws IOException {
+        String prompt = ragService.getRelevant(question);
+        String finalQuestion = "问题：" + question + "\n" + "参考资料：" + prompt;
         User user = (User) request.getSession().getAttribute("session_user_key");
         String systemPrompt = promptService.selectByPromptId(3).getPromptText();
         var messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory,user.getCode(),10000);
@@ -68,7 +75,7 @@ public class AiService {
                 .defaultAdvisors(messageChatMemoryAdvisor)
                 .build();
         return chatClient
-                .prompt(question)
+                .prompt(finalQuestion)
                 .system(systemPrompt)
                 .advisors(messageChatMemoryAdvisor)
                 .call()
@@ -107,7 +114,7 @@ public class AiService {
                 .content();
     }
 
-    public String giveSuggest(int studentId, String question, String answer, HttpServletRequest request) {
+    public String giveSuggest(int studentId, String question, String answer, String referenceAnswer, HttpServletRequest request) {
         String systemPrompt = promptService.selectByPromptId(6).getPromptText();
         User user = (User) request.getSession().getAttribute("session_user_key");
         var messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory,user.getCode(),10000);
@@ -116,7 +123,7 @@ public class AiService {
                 .defaultAdvisors(messageChatMemoryAdvisor)
                 .build();
         return chatClient
-                .prompt("学生id" + studentId + "问题：" + question + "\n" + "参考答案：" + answer + "\n" + "请给出建议")
+                .prompt("学生id" + studentId + "问题：" + question + "\n" + "参考答案：" + referenceAnswer + "\n,学生的答案是" + answer + ",请给出建议")
                 .system(systemPrompt)
                 .advisors(messageChatMemoryAdvisor)
                 .call()

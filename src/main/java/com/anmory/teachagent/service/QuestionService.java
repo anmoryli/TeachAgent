@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,14 +41,14 @@ public class QuestionService {
         return questionMapper.getQuestionTextById(questionId);
     }
 
-    public CompletableFuture<Question> generateQuestionAsync(String question, String knowledgePoint, HttpServletRequest request, int lessonPlanId) {
+    public CompletableFuture<Question> generateQuestionAsync(String question, String knowledgePoint, String prompt, HttpServletRequest request, int lessonPlanId) throws IOException {
         Question que = new Question();
-        String q = aiService.getQuestion(question, knowledgePoint, request);
+        String q = aiService.getQuestion(question, knowledgePoint, prompt, request);
         String type = aiService.getQuestionType(q, request);
         que.setQuestionType(type);
         que.setQuestionText(q);
         que.setKnowledgePoint(knowledgePoint);
-        que.setReferenceAnswer(aiService.getReferenceAnswer(aiService.getQuestion(question, knowledgePoint, request), request));
+        que.setReferenceAnswer(aiService.getReferenceAnswer(aiService.getQuestion(question, knowledgePoint, prompt, request), request));
         que.setLessonPlanId(lessonPlanId);
         return CompletableFuture.completedFuture(que);
     }

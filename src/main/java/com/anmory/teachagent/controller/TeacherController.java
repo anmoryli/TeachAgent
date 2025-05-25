@@ -37,6 +37,8 @@ public class TeacherController {
     QuestionService questionService;
     @Autowired
     StatisticsService statisticsService;
+    @Autowired
+    RagService ragService;
 
     @RequestMapping("/uploadFile")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
@@ -72,11 +74,13 @@ public class TeacherController {
 
     @RequestMapping("/createLessonPlan")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    public boolean createLessonPlan(String courseName, String question, HttpServletRequest request) {
+    public boolean createLessonPlan(String courseName, String question, HttpServletRequest request) throws IOException {
         log.info("创建课程计划成功");
+        String prompt = ragService.getRelevant(question);
+        prompt = "请根据以下内容生成:" + prompt;
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("session_user_key");
-        String plan = aiService.getLessonPlan(question, request, user.getCode());
+        String plan = aiService.getLessonPlan(prompt, request, user.getCode());
         lessonPlanService.insert(user.getUserId(), courseService.selectByName(courseName).getCourseId(), courseName+"课程计划", plan);
         return true;
     }
@@ -98,11 +102,12 @@ public class TeacherController {
     @RequestMapping("/generateQuestions")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public List<Question> generateQuestions(Integer lessonPlanId, String questionType, String knowledgePoint, int quantity,
-                                            HttpServletRequest request) {
+                                            HttpServletRequest request) throws IOException {
+        String prompt = ragService.getRelevant(questionType + " " + knowledgePoint);
         log.info(String.valueOf(lessonPlanId));
         for(int i = 0; i < quantity; i++) {
-            questionService.insert(lessonPlanId, aiService.getQuestion(questionType, knowledgePoint, request), questionType,
-                    aiService.getReferenceAnswer(aiService.getQuestion(questionType, knowledgePoint, request), request),
+            questionService.insert(lessonPlanId, aiService.getQuestion(questionType, knowledgePoint, prompt, request), questionType,
+                    aiService.getReferenceAnswer(aiService.getQuestion(questionType, knowledgePoint, prompt, request), request),
                     knowledgePoint);
         }
         return questionService.selectByLessonPlanId(lessonPlanId);

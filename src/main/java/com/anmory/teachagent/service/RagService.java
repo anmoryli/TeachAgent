@@ -3,6 +3,7 @@ package com.anmory.teachagent.service;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -18,11 +19,13 @@ import java.nio.charset.StandardCharsets;
  * @date 2025-05-22 上午8:46
  */
 
+@Slf4j
 @Service
 public class RagService {
     private final String baseUrl = "http://127.0.0.1:8001";
 
     public String getRelevant(String question) throws IOException {
+        log.info("RAG被调用，问题是:" + question);
         // 编码查询参数
         String encodedQuestion = URLEncoder.encode(question, StandardCharsets.UTF_8);
         String url = baseUrl + "/query?question=" + encodedQuestion;
@@ -49,6 +52,7 @@ public class RagService {
         Gson gson = new Gson();
         JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
         JsonArray relevant = jsonResponse.getAsJsonArray("results");
+        System.out.println("匹配结果"+relevant);
 
         // 只返回第一个匹配
         return relevant.get(0).getAsJsonObject().get("text").getAsString();

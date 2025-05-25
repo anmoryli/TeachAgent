@@ -17,6 +17,6 @@ class RagServiceTest {
 
     @Test
     void getRelevant() throws IOException {
-        System.out.println(ragService.getRelevant("那块石头多高？"));
+        System.out.println(ragService.getRelevant("TensorFlow.js 环境配置"));
     }
 }
