@@ -46,6 +46,8 @@ public class UserController {
     AnalyseService analyseService;
     @Autowired
     QuestionService questionService;
+    @Autowired
+    CountService countService;
     @RequestMapping("/login")
     public Result<User> login(String username, String password, String role, HttpSession session){
         log.info("用户登录: username = {}, password = {}, role = {}", username, password, role);
@@ -181,5 +183,21 @@ public class UserController {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null); // 服务器错误
         }
+    }
+
+    @RequestMapping("/getCount")
+    public Result<CountDto> getCount() {
+        CountDto countDto = new CountDto();
+        countDto.setCourseCnt(countService.getCourseCnt());
+        countDto.setStudentCnt(countService.getStudentCnt());
+        countDto.setTeacherCnt(countService.getTeacherCnt());
+        countDto.setLessonPlanCnt(countService.getLessonPlanCnt());
+        countDto.setQuestionCnt(countService.getQuestionCnt());
+        countDto.setMaterialCnt(countService.getMaterialCnt());
+        countDto.setPracticeRecordCnt(countService.getPracticeRecordCnt());
+        countDto.setAnswerCnt(countService.getAnswerCnt());
+        countDto.setCorrectCnt(countService.getCorrectCnt());
+        countDto.setIncorrectCnt(countService.getIncorrectCnt());
+        return Result.success("获取统计信息成功", countDto);
     }
 }

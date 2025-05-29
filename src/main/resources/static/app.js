@@ -10,6 +10,32 @@ const API_BASE_URL = "http://localhost:8088"
 
 // 页面初始化
 document.addEventListener("DOMContentLoaded", () => {
+  // 添加样式以适配 Markdown 内容到聊天气泡
+  const style = document.createElement("style")
+  style.textContent = `
+.message .message-content {
+  max-width: 90%%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+}
+.message .message-content pre {
+  background-color: #f4f4f4;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%%;
+}
+.message .message-content code {
+  background-color: #f0f0f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+`
+  document.head.appendChild(style)
+
   initializeApp()
   setupEventListeners()
 })
@@ -211,7 +237,8 @@ async function loadUsers() {
       const result = await response.json()
       const users = result.data || result
       renderUsersTable(users)
-      updateUserCount(users.length)
+      // 移除这行，因为统计数据现在通过 getCount 接口获取
+      // updateUserCount(users.length)
     }
   } catch (error) {
     console.error("加载用户列表失败:", error)
@@ -288,18 +315,103 @@ function renderResourcesTable(resources) {
 // 加载仪表板统计数据
 async function loadDashboardStats() {
   try {
-    const [teacherUsage, studentUsage] = await Promise.all([
-      fetch(`${API_BASE_URL}/admin/teacherUsageByDay`)
-          .then((r) => r.json())
-          .then((result) => result.data || result),
-      fetch(`${API_BASE_URL}/admin/studentUsageByDay`)
-          .then((r) => r.json())
-          .then((result) => result.data || result),
-    ])
+    // 使用新的统计接口
+    const response = await fetch(`${API_BASE_URL}/admin/getCount`)
+    if (response.ok) {
+      const result = await response.json()
+      const countData = result.data || result
 
-    renderUsageCharts(teacherUsage, studentUsage)
+      // 更新统计卡片
+      updateStatCards(countData)
+
+      // 继续加载使用情况数据
+      const [teacherUsage, studentUsage] = await Promise.all([
+        fetch(`${API_BASE_URL}/admin/teacherUsageByDay`)
+            .then((r) => r.json())
+            .then((result) => result.data || result),
+        fetch(`${API_BASE_URL}/admin/studentUsageByDay`)
+            .then((r) => r.json())
+            .then((result) => result.data || result),
+      ])
+
+      renderUsageCharts(teacherUsage, studentUsage)
+    }
   } catch (error) {
     console.error("加载统计数据失败:", error)
+  }
+}
+
+// 更新统计卡片数据
+function updateStatCards(countData) {
+  // 更新教师数量
+  const teacherCountElement = document.getElementById("teacherCount")
+  if (teacherCountElement) {
+    teacherCountElement.textContent = countData.teacherCnt || 0
+  }
+
+  // 更新学生数量
+  const studentCountElement = document.getElementById("studentCount")
+  if (studentCountElement) {
+    studentCountElement.textContent = countData.studentCnt || 0
+  }
+
+  // 更新课程数量
+  const courseCountElement = document.getElementById("courseCount")
+  if (courseCountElement) {
+    courseCountElement.textContent = countData.courseCnt || 0
+  }
+
+  // 更新题目数量
+  const questionCountElement = document.getElementById("questionCount")
+  if (questionCountElement) {
+    questionCountElement.textContent = countData.questionCnt || 0
+  }
+
+  // 添加新的统计信息到页面上的其他元素（如果存在）
+  updateAdditionalStats(countData)
+}
+
+// 更新额外的统计信息
+function updateAdditionalStats(countData) {
+  // 更新教学设计数量
+  const lessonPlanCountElement = document.getElementById("lessonPlanCount")
+  if (lessonPlanCountElement) {
+    lessonPlanCountElement.textContent = countData.lessonPlanCnt || 0
+  }
+
+  // 更新资料数量
+  const materialCountElement = document.getElementById("materialCount")
+  if (materialCountElement) {
+    materialCountElement.textContent = countData.materialCnt || 0
+  }
+
+  // 更新练习记录数量
+  const practiceRecordCountElement = document.getElementById("practiceRecordCount")
+  if (practiceRecordCountElement) {
+    practiceRecordCountElement.textContent = countData.practiceRecordCnt || 0
+  }
+
+  // 更新答案统计
+  const answerCountElement = document.getElementById("answerCount")
+  if (answerCountElement) {
+    answerCountElement.textContent = countData.answerCnt || 0
+  }
+
+  const correctCountElement = document.getElementById("correctCount")
+  if (correctCountElement) {
+    correctCountElement.textContent = countData.correctCnt || 0
+  }
+
+  const incorrectCountElement = document.getElementById("incorrectCount")
+  if (incorrectCountElement) {
+    incorrectCountElement.textContent = countData.incorrectCnt || 0
+  }
+
+  // 计算正确率
+  const correctRateElement = document.getElementById("correctRate")
+  if (correctRateElement && countData.answerCnt > 0) {
+    const rate = ((countData.correctCnt / countData.answerCnt) * 100).toFixed(1)
+    correctRateElement.textContent = rate + "%"
   }
 }
 
@@ -521,7 +633,7 @@ function renderLessonPlansGrid(lessonPlans) {
     card.className = "lesson-card card-hover"
     card.innerHTML = `
             <h3>${lesson.title + lesson.lessonPlanId}</h3>
-            <p class="text-truncate-3">${lesson.content}</p>
+            <p class="text-truncate-3">${truncateMarkdown(lesson.content)}</p>
             <div class="card-actions">
                 <button class="btn btn-primary btn-sm" onclick="viewLesson(${lesson.lessonPlanId})">
                     <i class="fas fa-eye"></i> 查看
@@ -571,34 +683,34 @@ async function loadQuestions() {
 
 // 题目过滤（本地过滤版本）
 async function filterQuestions() {
-  const lessonPlanFilter = document.getElementById("lessonPlanFilter").value;
-  const questionTypeFilter = document.getElementById("questionTypeFilter").value;
+  const lessonPlanFilter = document.getElementById("lessonPlanFilter").value
+  const questionTypeFilter = document.getElementById("questionTypeFilter").value
 
-  showLoading(true);
+  showLoading(true)
   try {
     // 加载所有题目
-    const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestions`);
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestions`)
     if (response.ok) {
-      const result = await response.json();
-      let questions = result.data || result;
+      const result = await response.json()
+      let questions = result.data || result
 
       // 应用过滤
       if (lessonPlanFilter) {
-        questions = questions.filter(q => q.lessonPlanId == lessonPlanFilter);
+        questions = questions.filter((q) => q.lessonPlanId == lessonPlanFilter)
       }
       if (questionTypeFilter) {
-        questions = questions.filter(q => q.questionType === questionTypeFilter);
+        questions = questions.filter((q) => q.questionType === questionTypeFilter)
       }
 
-      renderQuestionsGrid(questions);
+      renderQuestionsGrid(questions)
     } else {
-      showNotification("加载题目列表失败", "error");
+      showNotification("加载题目列表失败", "error")
     }
   } catch (error) {
-    console.error("加载题目列表失败:", error);
-    showNotification("网络错误，请稍后重试", "error");
+    console.error("加载题目列表失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
   } finally {
-    showLoading(false);
+    showLoading(false)
   }
 }
 
@@ -727,10 +839,10 @@ async function askQuestion() {
         `${API_BASE_URL}/student/askQuestion?courseId=${courseId}&questionText=${encodeURIComponent(questionText)}`,
     )
 
-    console.log("响应数据:",  response);
+    console.log("响应数据:", response)
     if (response) {
       const tmp = await response.json()
-      const answer = tmp.data;
+      const answer = tmp.data
       addMessageToChat(answer, "assistant")
       showNotification("问题提交成功", "success")
     } else {
@@ -745,15 +857,20 @@ async function askQuestion() {
 }
 
 // 添加消息到聊天界面
+
 function addMessageToChat(message, sender) {
   const chatMessages = document.getElementById("chatMessages")
   if (!chatMessages) return
 
   const messageDiv = document.createElement("div")
   messageDiv.className = `message ${sender}`
+
+  // 使用 marked.js 渲染 AI 回复的 Markdown 内容
+  const parsedMessage = sender === "assistant" ? marked.parse(message) : escapeHtml(message)
+
   messageDiv.innerHTML = `
         <div class="message-content">
-            ${message}
+            ${parsedMessage}
         </div>
     `
 
@@ -1124,65 +1241,65 @@ function showCreateLessonModal() {
         <button type="submit" class="btn btn-primary">生成教学设计</button>
       </div>
     </form>
-  `;
+  `
 
-  showModal("创建教学设计", content);
+  showModal("创建教学设计", content)
 
   // 动态加载课程数据
-  loadCoursesForLessonModal();
+  loadCoursesForLessonModal()
 
   document.getElementById("createLessonForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    const formData = new FormData(e.target);
-    const courseId = formData.get("courseId"); // 修改为 courseId
-    const question = formData.get("question");
+    const formData = new FormData(e.target)
+    const courseId = formData.get("courseId") // 修改为 courseId
+    const question = formData.get("question")
 
-    showLoading(true);
+    showLoading(true)
 
     try {
       const response = await fetch(
-          `${API_BASE_URL}/teacher/createLessonPlan?courseId=${encodeURIComponent(courseId)}&question=${encodeURIComponent(question)}`
-      );
+          `${API_BASE_URL}/teacher/createLessonPlan?courseId=${encodeURIComponent(courseId)}&question=${encodeURIComponent(question)}`,
+      )
       if (response.ok) {
-        showNotification("教学设计创建成功", "success");
-        closeModal();
-        loadLessonPlans();
+        showNotification("教学设计创建成功", "success")
+        closeModal()
+        loadLessonPlans()
       } else {
-        showNotification("创建失败，请稍后重试", "error");
+        showNotification("创建失败，请稍后重试", "error")
       }
     } catch (error) {
-      console.error("创建教学设计失败:", error);
-      showNotification("网络错误，请稍后重试", "error");
+      console.error("创建教学设计失败:", error)
+      showNotification("网络错误，请稍后重试", "error")
     } finally {
-      showLoading(false);
+      showLoading(false)
     }
-  });
+  })
 }
 
 // 为模态框加载课程列表
 async function loadCoursesForLessonModal() {
   try {
-    const response = await fetch(`${API_BASE_URL}/teacher/getAllCourses`);
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllCourses`)
     if (response.ok) {
-      const result = await response.json();
-      const courses = result.data || result;
-      const select = document.getElementById("lessonCourseName");
+      const result = await response.json()
+      const courses = result.data || result
+      const select = document.getElementById("lessonCourseName")
       if (select) {
-        select.innerHTML = '<option value="">请选择课程</option>'; // 清空并保留默认选项
+        select.innerHTML = '<option value="">请选择课程</option>' // 清空并保留默认选项
         courses.forEach((course) => {
-          const option = document.createElement("option");
-          option.value = course.courseId; // 使用 courseId 作为 value
-          option.textContent = course.courseName; // 显示 courseName
-          select.appendChild(option);
-        });
+          const option = document.createElement("option")
+          option.value = course.courseId // 使用 courseId 作为 value
+          option.textContent = course.courseName // 显示 courseName
+          select.appendChild(option)
+        })
       }
     } else {
-      showNotification("获取课程列表失败", "error");
+      showNotification("获取课程列表失败", "error")
     }
   } catch (error) {
-    console.error("加载课程列表失败:", error);
-    showNotification("网络错误，请稍后重试", "error");
+    console.error("加载课程列表失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
   }
 }
 
@@ -1251,8 +1368,6 @@ function showGenerateQuestionsModal() {
     } catch (error) {
       console.error("生成题目失败:", error)
       showNotification("网络错误，请稍后重试", "error")
-    } finally {
-      showLoading(false)
     }
   })
 }
@@ -1547,19 +1662,20 @@ function getQuestionTypeDisplayName(type) {
   return names[type] || type
 }
 
-function updateUserCount(count) {
-  const element = document.getElementById("teacherCount")
-  if (element) {
-    element.textContent = count
-  }
-}
+// 删除这个函数，因为已经被新的统计逻辑替代
+// function updateUserCount(count) {
+//   const element = document.getElementById("teacherCount")
+//   if (element) {
+//     element.textContent = count
+//   }
+// }
 
 // 加载练习历史
 async function loadPracticeHistory() {
-  const container = document.getElementById("practiceHistoryList");
-  if (!container) return;
+  const container = document.getElementById("practiceHistoryList")
+  if (!container) return
 
-  showLoading(true);
+  showLoading(true)
 
   try {
     const response = await fetch(`${API_BASE_URL}/student/getPracticeHistory`, {
@@ -1569,43 +1685,43 @@ async function loadPracticeHistory() {
         // 如果需要认证头（如 token），可在此添加
         // 例如：Authorization: `Bearer ${localStorage.getItem("token")}`
       },
-    });
+    })
 
     if (response) {
-      const result = await response.json();
-      const history = result.data || [];
-      renderPracticeHistory(history);
+      const result = await response.json()
+      const history = result.data || []
+      renderPracticeHistory(history)
     } else {
-      showNotification("加载练习历史失败", "error");
+      showNotification("加载练习历史失败", "error")
       container.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-clipboard-check"></i>
           <h3>暂无练习记录</h3>
           <p>完成练习后记录会显示在这里</p>
         </div>
-      `;
+      `
     }
   } catch (error) {
-    console.error("加载练习历史失败:", error);
-    showNotification("网络错误，请稍后重试", "error");
+    console.error("加载练习历史失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
     container.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-clipboard-check"></i>
         <h3>暂无练习记录</h3>
         <p>完成练习后记录会显示在这里</p>
       </div>
-    `;
+    `
   } finally {
-    showLoading(false);
+    showLoading(false)
   }
 }
 
 // 渲染练习历史
 function renderPracticeHistory(history) {
-  const container = document.getElementById("practiceHistoryList");
-  if (!container) return;
+  const container = document.getElementById("practiceHistoryList")
+  if (!container) return
 
-  container.innerHTML = "";
+  container.innerHTML = ""
 
   if (!history || history.length === 0) {
     container.innerHTML = `
@@ -1614,13 +1730,13 @@ function renderPracticeHistory(history) {
         <h3>暂无练习记录</h3>
         <p>完成练习后记录会显示在这里</p>
       </div>
-    `;
-    return;
+    `
+    return
   }
 
   history.forEach((item) => {
-    const historyItem = document.createElement("div");
-    historyItem.className = "history-item";
+    const historyItem = document.createElement("div")
+    historyItem.className = "history-item"
     historyItem.innerHTML = `
       <h4>题目 #${item.questionId}</h4>
       <p><strong>知识点:</strong> ${item.knowledgePoint || "未知"}</p>
@@ -1630,9 +1746,9 @@ function renderPracticeHistory(history) {
       <p><strong>结果:</strong> <span class="${item.isCorrect ? "text-success" : "text-danger"}">${item.isCorrect ? "正确" : "错误"}</span></p>
       ${item.errorAnalysis ? `<p><strong>分析建议:</strong> ${item.errorAnalysis}</p>` : ""}
       <p class="time">${formatDate(item.submitTime)}</p>
-    `;
-    container.appendChild(historyItem);
-  });
+    `
+    container.appendChild(historyItem)
+  })
 }
 
 // 查看课程详情
@@ -2455,4 +2571,23 @@ async function deleteMaterial(materialId) {
   } finally {
     showLoading(false)
   }
+}
+
+function escapeHtml(text) {
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  }
+  return text.replace(/[&<>"']/g, (m) => map[m])
+}
+
+function truncateMarkdown(markdown, length = 200) {
+  const html = marked.parse(markdown || "")
+  const div = document.createElement("div")
+  div.innerHTML = html
+  const text = div.textContent || div.innerText || ""
+  return text.length > length ? text.substring(0, length) + "..." : text
 }
