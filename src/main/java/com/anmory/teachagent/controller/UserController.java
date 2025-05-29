@@ -3,11 +3,9 @@ package com.anmory.teachagent.controller;
 import com.anmory.teachagent.dto.*;
 import com.anmory.teachagent.model.LessonPlan;
 import com.anmory.teachagent.model.Material;
+import com.anmory.teachagent.model.Question;
 import com.anmory.teachagent.model.User;
-import com.anmory.teachagent.service.AnalyseService;
-import com.anmory.teachagent.service.LessonPlanService;
-import com.anmory.teachagent.service.MaterialService;
-import com.anmory.teachagent.service.UserService;
+import com.anmory.teachagent.service.*;
 import com.itextpdf.io.source.ByteArrayOutputStream;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
@@ -46,8 +44,9 @@ public class UserController {
     LessonPlanService lessonPlanService;
     @Autowired
     AnalyseService analyseService;
+    @Autowired
+    QuestionService questionService;
     @RequestMapping("/login")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public User login(String username, String password, String role, HttpSession session){
         log.info("用户登录: username = {}, password = {}, role = {}", username, password, role);
         User user = userService.selectByName(username);
@@ -58,39 +57,39 @@ public class UserController {
         return user;
     }
 
+    @RequestMapping("/getAllQuestions")
+    public List<Question> getAllQuestions() {
+        log.info("获取所有问题成功");
+        return questionService.selectAll();
+    }
+
     @RequestMapping("/register")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public boolean register(String username, String password, String role, String email, String realName, String code) {
         return userService.insert(username, password, role, email, realName, code) > 0;
     }
 
     @RequestMapping("/viewUsers")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public List<User> viewUsers() {
         return userService.selectAll();
     }
 
     @RequestMapping("/addUser")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public boolean addUser(String username, String password, String role, String email, String realName, String code) {
         return userService.insert(username, password, role, email, realName, code) > 0;
     }
 
     @RequestMapping("/deleteUser")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public boolean deleteUser(String username) {
         return userService.deleteByName(username) > 0;
     }
 
     @RequestMapping("/updateUser")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public boolean updateUser(String username, String password, String role, String email) {
         User user = userService.selectByName(username);
         return userService.update(user.getUserId(), username, password, role, email) > 0;
     }
 
     @RequestMapping("/viewResources")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public List<Material> viewResources() {
         return materialService.selectAll();
     }
@@ -136,7 +135,7 @@ public class UserController {
     }
 
     @RequestMapping("/exportResource")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
+//    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public ResponseEntity<byte[]> exportResource(int lessonPlanId) {
         try {
             // 获取课程计划

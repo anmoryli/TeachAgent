@@ -1,5 +1,6 @@
 package com.anmory.teachagent.service;
 
+import com.anmory.teachagent.dto.Result;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -22,7 +23,35 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @Service
 public class RagService {
-    private final String baseUrl = "http://127.0.0.1:8001";
+    private final String baseUrl = "http://127.0.0.1:8002";
+
+    public Result<String> embedding(String url) throws IOException {
+        // http://175.24.205.213:91/usr/local/nginx/files/teach/file.md
+        log.info("RAG被调用，url:" + url);
+        String encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
+        String finalUrl = baseUrl + "/text_embedding?file=" + encodedUrl;
+
+        // 创建okhttp客户端
+        OkHttpClient httpClient = new OkHttpClient();
+        // 构建请求体
+        Request request = new Request.Builder()
+                .url(finalUrl)
+                .get()
+                .build();
+
+        // 构建响应体
+        Response response = httpClient.newCall(request).execute();
+
+        if(!response.isSuccessful()) {
+            throw new IOException("请求失败，状态码: " + response);
+        }
+
+        // 获取响应体
+        String responseBody = response.body().string();
+        System.out.println("原始响应"+responseBody);
+
+        return Result.success("success", responseBody);
+    }
 
     public String getRelevant(String question) throws IOException {
         log.info("RAG被调用，问题是:" + question);

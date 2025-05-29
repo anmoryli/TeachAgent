@@ -3,11 +3,10 @@ package com.anmory.teachagent.controller;
 import com.anmory.teachagent.model.*;
 import com.anmory.teachagent.service.*;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,6 +21,7 @@ import java.util.concurrent.Executors;
  * @date 2025-05-11 上午10:31
  */
 
+@Slf4j
 @RestController
 @RequestMapping("/student")
 public class StudentController {
@@ -39,6 +39,8 @@ public class StudentController {
     PracticeRecordService practiceRecordService;
     @Autowired
     RagService ragService;
+    @Autowired
+    JudgePrommingService judgePrommingService;
 
     @RequestMapping("/askQuestion")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
@@ -62,14 +64,26 @@ public class StudentController {
         return answerService.selectByStudentId(studentId);
     }
 
+    @RequestMapping("/getAllQuestions")
+    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
+    public List<Question> getAllQuestions() {
+        log.info("获取所有问题成功");
+        return questionService.selectAll();
+    }
+
     @RequestMapping("/getPracticeQuestions")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public List<Question> getPracticeQuestions(int courseId, String knowledgePoint, int quantity, HttpServletRequest request) throws IOException {
         List<Question> questions = new ArrayList<>();
         String courseName = courseService.selectById(courseId).getCourseName();
+        User user = (User) request.getSession().getAttribute("session_user_key");
+        if(user == null) {
+            return null;
+        }
+        List<PracticeRecord> practiceRecord = practiceRecordService.selectByStudentId(user.getUserId());
         // 获取课程和课时计划ID
         int lessonPlanId = lessonPlanService.getLessonPlanIdByCourseId(courseId);
-        String question = "生成一个关于" + courseName + "的" + knowledgePoint + "的题目";
+        String question = "生成一个关于" + courseName + "的" + knowledgePoint + "的题目,你需要基于这些历史的练习来生成：" + practiceRecord.toString();
         String prompt = ragService.getRelevant(question);
         question = question + "，需要参考的资料是:" + prompt;
         // 用线程池并行生成问题
@@ -105,22 +119,52 @@ public class StudentController {
         return questions;
     }
 
-    @RequestMapping("/submitPractice")
-    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    PracticeRecord submitPractice(int questionId, String submittedAnswer, HttpServletRequest request) throws IOException {
-        String referenceAnswer = aiService.getReferenceAnswer(questionService.getQuestionTextById(questionId), request);
+    @PostMapping("/submitPractice")
+    public PracticeRecord submitPractice(@RequestBody SubmitRequest request, HttpServletRequest httpRequest) throws Exception {
+        int questionId = request.getQuestionId();
+        String submittedAnswer = request.getSubmittedAnswer();
+        String questionType = aiService.getQuestionType(submittedAnswer, httpRequest);
+
+        String referenceAnswer;
+        // 获取参考答案
+        String questionText = questionService.getQuestionTextById(questionId);
+        if("编程题".equals(questionType)) {
+            referenceAnswer = judgePrommingService.judge(submittedAnswer);
+        }
+        else {
+            referenceAnswer = aiService.getReferenceAnswer(questionText, httpRequest);
+        }
+
+        // 创建练习记录
         PracticeRecord practiceRecord = new PracticeRecord();
         practiceRecord.setQuestionId(questionId);
         practiceRecord.setSubmittedAnswer(submittedAnswer);
-        User user = (User) request.getSession().getAttribute("session_user_key");
+
+        // 获取用户信息
+        User user = (User) httpRequest.getSession().getAttribute("session_user_key");
+        if (user == null) {
+            throw new IllegalStateException("User not logged in");
+        }
         int userId = user.getUserId();
-        practiceRecord.setStudentId(user.getUserId());
-        String questionText = questionService.getQuestionTextById(questionId);
-        Boolean isCorrect = Boolean.valueOf(aiService.judgeAnswer(userId, questionText, submittedAnswer, request));
+        practiceRecord.setStudentId(userId);
+
+        // 判断答案
+        Boolean isCorrect = Boolean.valueOf(aiService.judgeAnswer(userId, questionText, submittedAnswer, httpRequest));
         practiceRecord.setIsCorrect(isCorrect);
-        String errorAnalysis = aiService.giveSuggest(userId, questionText, submittedAnswer, referenceAnswer, request);
+
+        // 获取错误分析
+        String errorAnalysis = aiService.giveSuggest(userId, questionText, submittedAnswer, referenceAnswer, httpRequest);
         practiceRecord.setErrorAnalysis(errorAnalysis);
+
+        // 保存记录
         practiceRecordService.insert(userId, questionId, submittedAnswer, isCorrect, errorAnalysis);
+
         return practiceRecord;
+    }
+
+    @Data
+    static class SubmitRequest {
+        private int questionId;
+        private String submittedAnswer;
     }
 }

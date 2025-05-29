@@ -26,6 +26,7 @@ public interface StatisticsMapper {
                     LEFT JOIN
                 Answer a ON pr.question_id = a.answer_id
             WHERE
-                pr.is_correct = 0""")
+                pr.is_correct = 0
+            order by Answer.create_time desc limit 200""")
     List<Statistics> getCourseStuStatistics(int courseId, int studentId);
 }

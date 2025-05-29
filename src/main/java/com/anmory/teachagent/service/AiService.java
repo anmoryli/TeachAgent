@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Anmory
@@ -27,6 +28,8 @@ public class AiService {
     PromptService promptService;
     @Autowired
     RagService ragService;
+    @Autowired
+    JudgePrommingService judgePrommingService;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
     public String getLessonPlan(String prompt, HttpServletRequest request,String conId) {
@@ -114,16 +117,45 @@ public class AiService {
                 .content();
     }
 
-    public String giveSuggest(int studentId, String question, String answer, String referenceAnswer, HttpServletRequest request) {
+    public String giveSuggest(int studentId, String question, String answer, String referenceAnswer, HttpServletRequest request) throws IOException, InterruptedException {
         String systemPrompt = promptService.selectByPromptId(6).getPromptText();
         User user = (User) request.getSession().getAttribute("session_user_key");
+        String type = getQuestionType(question,request);
+        if("编程题".equals(type)) {
+            // 执行代码判断结果
+            // TODO
+            return judgePrommingService.judge(answer);
+        }
+        else {
+            var messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory,user.getCode(),10000);
+            ChatClient chatClient = ChatClient.builder(openAiChatModel)
+                    .defaultSystem(systemPrompt)
+                    .defaultAdvisors(messageChatMemoryAdvisor)
+                    .build();
+            return chatClient
+                    .prompt("学生id" + studentId + "问题：" + question + "\n" + "参考答案：" + referenceAnswer + "\n,学生的答案是" + answer + ",请给出建议")
+                    .system(systemPrompt)
+                    .advisors(messageChatMemoryAdvisor)
+                    .call()
+                    .content();
+        }
+    }
+
+    public String giveSumAndTeachSuggest(List<Object> questions, HttpServletRequest request) {
+        String systemPrompt = promptService.selectByPromptId(8).getPromptText();
+        User user = (User) request.getSession().getAttribute("session_user_key");
+        if(user == null) {
+            return "请先登录";
+        }
         var messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory,user.getCode(),10000);
         ChatClient chatClient = ChatClient.builder(openAiChatModel)
                 .defaultSystem(systemPrompt)
                 .defaultAdvisors(messageChatMemoryAdvisor)
                 .build();
+
         return chatClient
-                .prompt("学生id" + studentId + "问题：" + question + "\n" + "参考答案：" + referenceAnswer + "\n,学生的答案是" + answer + ",请给出建议")
+                .prompt("你需要根据" + questions +"给出知识掌握情况总结和教学建议，并且给出的格式是纯文本的格式，将这两个方面分开给出，不能带有任何其他格式" +
+                        "可以稍微使用一点markdown但不能太多。")
                 .system(systemPrompt)
                 .advisors(messageChatMemoryAdvisor)
                 .call()

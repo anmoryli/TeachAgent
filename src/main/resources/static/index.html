@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教学智能体系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="components.css">
+    <link rel="stylesheet" href="animations.css">
+    <!-- 使用国内CDN -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h1>教学智能体系统</h1>
+                    <p>智能化教学管理平台</p>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">角色</label>
+                        <select id="role" name="role" required>
+                            <option value="">请选择角色</option>
+                            <option value="admin">管理员</option>
+                            <option value="teacher">教师</option>
+                            <option value="student">学生</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">登录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员页面 -->
+    <div id="adminPage" class="page">
+        <div class="dashboard">
+            <nav class="sidebar">
+                <div class="sidebar-header">
+                    <i class="fas fa-user-shield"></i>
+                    <h3>管理员控制台</h3>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#" data-section="admin-dashboard"><i class="fas fa-tachometer-alt"></i> 数据概览</a></li>
+                    <li><a href="#" data-section="admin-users"><i class="fas fa-users"></i> 用户管理</a></li>
+                    <li><a href="#" data-section="admin-resources"><i class="fas fa-folder"></i> 资源管理</a></li>
+                    <li><a href="#" data-section="admin-analytics"><i class="fas fa-chart-bar"></i> 数据分析</a></li>
+                    <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+                </ul>
+            </nav>
+            <main class="main-content">
+                <!-- 数据概览 -->
+                <section id="admin-dashboard" class="content-section active">
+                    <h2>数据概览</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <div class="stat-info">
+                                <h3 id="teacherCount">0</h3>
+                                <p>教师总数</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-user-graduate"></i>
+                            <div class="stat-info">
+                                <h3 id="studentCount">0</h3>
+                                <p>学生总数</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-book"></i>
+                            <div class="stat-info">
+                                <h3 id="courseCount">0</h3>
+                                <p>课程总数</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-question-circle"></i>
+                            <div class="stat-info">
+                                <h3 id="questionCount">0</h3>
+                                <p>题目总数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>教师使用情况</h3>
+                            <div id="teacherUsageChart" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>学生使用情况</h3>
+                            <div id="studentUsageChart" class="chart-container"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 用户管理 -->
+                <section id="admin-users" class="content-section">
+                    <div class="section-header">
+                        <h2>用户管理</h2>
+                        <button class="btn btn-primary" onclick="showAddUserModal()">
+                            <i class="fas fa-plus"></i> 添加用户
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table id="usersTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>用户ID</th>
+                                    <th>用户名</th>
+                                    <th>角色</th>
+                                    <th>邮箱</th>
+                                    <th>真实姓名</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 资源管理 -->
+                <section id="admin-resources" class="content-section">
+                    <div class="section-header">
+                        <h2>资源管理</h2>
+                        <button class="btn btn-primary" onclick="exportAllResources()">
+                            <i class="fas fa-download"></i> 导出资源
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table id="resourcesTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>资源ID</th>
+                                    <th>标题</th>
+                                    <th>类型</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 数据分析 -->
+                <section id="admin-analytics" class="content-section">
+                    <h2>数据分析</h2>
+                    <div class="analytics-tabs">
+                        <button class="tab-btn active" data-tab="student-analysis">学生分析</button>
+                        <button class="tab-btn" data-tab="teacher-analysis">教师分析</button>
+                        <button class="tab-btn" data-tab="learning-effect">学习效果</button>
+                    </div>
+                    <div id="student-analysis" class="tab-content active">
+                        <div class="table-container">
+                            <table id="studentAnalysisTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>学生ID</th>
+                                        <th>知识点</th>
+                                        <th>平均正确率</th>
+                                        <th>常见错误</th>
+                                        <th>教学建议</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="teacher-analysis" class="tab-content">
+                        <div class="table-container">
+                            <table id="teacherAnalysisTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>教师ID</th>
+                                        <th>平均备课时间</th>
+                                        <th>平均批改时间</th>
+                                        <th>平均正确率</th>
+                                        <th>高频错误点</th>
+                                        <th>优化建议</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="learning-effect" class="tab-content">
+                        <div class="table-container">
+                            <table id="learningEffectTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>学生ID</th>
+                                        <th>知识点</th>
+                                        <th>平均正确率</th>
+                                        <th>常见错误</th>
+                                        <th>教学建议</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- 教师页面 -->
+    <div id="teacherPage" class="page">
+        <div class="dashboard">
+            <nav class="sidebar">
+                <div class="sidebar-header">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h3>教师工作台</h3>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#" data-section="teacher-courses"><i class="fas fa-book"></i> 课程管理</a></li>
+                    <li><a href="#" data-section="teacher-lessons"><i class="fas fa-clipboard-list"></i> 教学设计</a></li>
+                    <li><a href="#" data-section="teacher-questions"><i class="fas fa-question-circle"></i> 题目管理</a></li>
+                    <li><a href="#" data-section="teacher-materials"><i class="fas fa-upload"></i> 资料上传</a></li>
+                    <li><a href="#" data-section="teacher-analytics"><i class="fas fa-chart-line"></i> 学情分析</a></li>
+                    <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+                </ul>
+            </nav>
+            <main class="main-content">
+                <!-- 课程管理 -->
+                <section id="teacher-courses" class="content-section active">
+                    <div class="section-header">
+                        <h2>课程管理</h2>
+                        <button class="btn btn-primary" onclick="showCreateCourseModal()">
+                            <i class="fas fa-plus"></i> 创建课程
+                        </button>
+                    </div>
+                    <div class="courses-grid" id="coursesGrid"></div>
+                </section>
+
+                <!-- 教学设计 -->
+                <section id="teacher-lessons" class="content-section">
+                    <div class="section-header">
+                        <h2>教学设计</h2>
+                        <button class="btn btn-primary" onclick="showCreateLessonModal()">
+                            <i class="fas fa-plus"></i> 创建教学设计
+                        </button>
+                    </div>
+                    <div class="lessons-grid" id="lessonsGrid"></div>
+                </section>
+
+                <!-- 题目管理 -->
+                <section id="teacher-questions" class="content-section">
+                    <div class="section-header">
+                        <h2>题目管理</h2>
+                        <button class="btn btn-primary" onclick="showGenerateQuestionsModal()">
+                            <i class="fas fa-plus"></i> 生成题目
+                        </button>
+                    </div>
+                    <div class="questions-container">
+                        <div class="filter-bar">
+                            <select id="lessonPlanFilter" onchange="filterQuestions()">
+                                <option value="">所有教学设计</option>
+                            </select>
+                            <select id="questionTypeFilter" onchange="filterQuestions()">
+                                <option value="">所有题型</option>
+                                <option value="multiple_choice">选择题</option>
+                                <option value="programming">编程题</option>
+                                <option value="short_answer">简答题</option>
+                            </select>
+                        </div>
+                        <div class="questions-grid" id="questionsGrid"></div>
+                    </div>
+                </section>
+
+                <!-- 资料上传 -->
+                <section id="teacher-materials" class="content-section">
+                    <h2>资料上传</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>点击或拖拽文件到此处上传</p>
+                        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" style="display: none;">
+                    </div>
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p id="progressText">上传中...</p>
+                    </div>
+                </section>
+
+                <!-- 学情分析 -->
+                <section id="teacher-analytics" class="content-section">
+                    <h2>学情分析</h2>
+                    <div class="analytics-form">
+                        <div class="form-group">
+                            <label for="analyticsCourse">选择课程</label>
+                            <select id="analyticsCourse"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="analyticsStudent">选择学生</label>
+                            <select id="analyticsStudent"></select>
+                        </div>
+                        <button class="btn btn-primary" onclick="generateAnalysis()">生成分析报告</button>
+                    </div>
+                    <div class="analysis-result" id="analysisResult"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- 学生页面 -->
+    <div id="studentPage" class="page">
+        <div class="dashboard">
+            <nav class="sidebar">
+                <div class="sidebar-header">
+                    <i class="fas fa-user-graduate"></i>
+                    <h3>学生学习中心</h3>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#" data-section="student-ask"><i class="fas fa-question"></i> 在线提问</a></li>
+                    <li><a href="#" data-section="student-practice"><i class="fas fa-pencil-alt"></i> 练习测试</a></li>
+                    <li><a href="#" data-section="student-history"><i class="fas fa-history"></i> 学习记录</a></li>
+                    <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+                </ul>
+            </nav>
+            <main class="main-content">
+                <!-- 在线提问 -->
+                <section id="student-ask" class="content-section active">
+                    <h2>在线学习助手</h2>
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages"></div>
+                        <div class="chat-input">
+                            <div class="form-group">
+                                <label for="questionCourse">选择课程</label>
+                                <select id="questionCourse"></select>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" id="questionInput" placeholder="请输入您的问题...">
+                                <button class="btn btn-primary" onclick="askQuestion()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 练习测试 -->
+                <section id="student-practice" class="content-section">
+                    <h2>练习测试</h2>
+                    <div class="practice-setup" id="practiceSetup">
+                        <div class="form-group">
+                            <label for="practiceCourse">选择课程</label>
+                            <select id="practiceCourse"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="knowledgePoint">知识点</label>
+                            <input type="text" id="knowledgePoint" placeholder="请输入知识点">
+                        </div>
+                        <div class="form-group">
+                            <label for="questionQuantity">题目数量</label>
+                            <input type="number" id="questionQuantity" min="1" max="10" value="5">
+                        </div>
+                        <button class="btn btn-primary" onclick="generatePractice()">开始练习</button>
+                    </div>
+                    <div class="practice-questions" id="practiceQuestions" style="display: none;">
+                        <div class="question-progress">
+                            <span id="currentQuestion">1</span> / <span id="totalQuestions">5</span>
+                        </div>
+                        <div class="question-content" id="questionContent"></div>
+                        <div class="answer-input">
+                            <textarea id="answerInput" placeholder="请输入您的答案..."></textarea>
+                            <div class="question-actions">
+                                <button class="btn btn-secondary" onclick="previousQuestion()">上一题</button>
+                                <button class="btn btn-primary" onclick="nextQuestion()">下一题</button>
+                                <button class="btn btn-success" onclick="submitPractice()" style="display: none;">提交答案</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="practice-result" id="practiceResult" style="display: none;"></div>
+                </section>
+
+                <!-- 学习记录 -->
+                <section id="student-history" class="content-section">
+                    <h2>学习记录</h2>
+                    <div class="history-tabs">
+                        <button class="tab-btn active" data-tab="question-history">提问记录</button>
+                        <button class="tab-btn" data-tab="practice-history">练习记录</button>
+                    </div>
+                    <div id="question-history" class="tab-content active">
+                        <div class="history-list" id="questionHistoryList"></div>
+                    </div>
+                    <div id="practice-history" class="tab-content">
+                        <div class="history-list" id="practiceHistoryList"></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- 加载动画 -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

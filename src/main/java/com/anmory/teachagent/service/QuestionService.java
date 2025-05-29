@@ -21,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 public class QuestionService {
     @Autowired
     QuestionMapper questionMapper;
-
     @Autowired
     AiService aiService;
     @Autowired

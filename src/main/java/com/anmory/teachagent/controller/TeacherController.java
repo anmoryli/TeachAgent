@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,17 +44,33 @@ public class TeacherController {
     @RequestMapping("/uploadFile")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public boolean upload(@RequestParam("file") MultipartFile file) throws IOException {
-        log.info("文件名称:",  file.getOriginalFilename());
-        String filePath = "/user/local/nginx/files/teach/"+file.getOriginalFilename();
+        log.info("文件名称: {}", file.getOriginalFilename());
+        String filePath = "/user/local/nginx/files/teach/" + file.getOriginalFilename();
         File dir = new File("/user/local/nginx/files/teach/");
-        if(!dir.exists()) {
+        if (!dir.exists()) {
             dir.mkdirs();
         }
-        FileOutputStream fos = new FileOutputStream(new File(filePath));
-        fos.write(file.getBytes());
-        log.info("文件上传成功");
-        fos.close();
-        materialService.insert(file.getOriginalFilename(), "/user/local/nginx/files/teach/"+file.getOriginalFilename(), "document");
+
+        File targetFile = new File(filePath);
+        boolean isFileExists = targetFile.exists();
+
+        // 覆盖文件
+        try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+            fos.write(file.getBytes());
+            log.info("文件上传成功");
+        }
+
+        // 如果文件已存在，跳过向量化操作
+        if (!isFileExists) {
+            String url = "http://175.24.205.213:91/usr/local/nginx/files/teach/" + file.getOriginalFilename();
+            ragService.embedding(url);
+            log.info("文件进行向量化处理");
+        } else {
+            log.info("文件已存在，跳过向量化处理");
+        }
+
+        // 插入数据库（无论文件是否已存在）
+        materialService.insert(file.getOriginalFilename(), filePath, "document");
         return true;
     }
 
@@ -130,7 +147,9 @@ public class TeacherController {
 
     @RequestMapping("/viewLearningAnalysis")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    public List<Statistics> viewLearningAnalysis(int courseId, int studentId) {
-        return statisticsService.getCourseStuStatistics(courseId, studentId);
+    public String viewLearningAnalysis(int courseId, int studentId,HttpServletRequest request) {
+        List<Object> statistics = Collections.singletonList(statisticsService.getCourseStuStatistics(courseId, studentId));
+        log.info(statistics.toString());
+        return aiService.giveSumAndTeachSuggest(statistics, request);
     }
 }
