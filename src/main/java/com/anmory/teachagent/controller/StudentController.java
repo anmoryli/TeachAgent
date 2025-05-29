@@ -1,5 +1,6 @@
 package com.anmory.teachagent.controller;
 
+import com.anmory.teachagent.dto.Result;
 import com.anmory.teachagent.model.*;
 import com.anmory.teachagent.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -117,6 +118,14 @@ public class StudentController {
         }
         executor.shutdown(); // 关线程池
         return questions;
+    }
+
+    @RequestMapping("/getPracticeHistory")
+    public Result<List<PracticeRecord>> getPracticeHistory(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute("session_user_key");
+        int studentId = user.getUserId();
+        List<PracticeRecord> practiceRecord = practiceRecordService.selectByStudentId(studentId);
+        return Result.success("获取练习记录成功", practiceRecord);
     }
 
     @PostMapping("/submitPractice")

@@ -727,8 +727,10 @@ async function askQuestion() {
         `${API_BASE_URL}/student/askQuestion?courseId=${courseId}&questionText=${encodeURIComponent(questionText)}`,
     )
 
-    if (response.ok) {
-      const answer = await response.text()
+    console.log("响应数据:",  response);
+    if (response) {
+      const tmp = await response.json()
+      const answer = tmp.data;
       addMessageToChat(answer, "assistant")
       showNotification("问题提交成功", "success")
     } else {
@@ -1552,28 +1554,85 @@ function updateUserCount(count) {
   }
 }
 
-// 题目过滤
-function filterQuestions() {
-  const lessonPlanFilter = document.getElementById("lessonPlanFilter").value
-  const typeFilter = document.getElementById("questionTypeFilter").value
-
-  // 这里可以实现过滤逻辑
-  loadQuestions()
-}
-
 // 加载练习历史
 async function loadPracticeHistory() {
-  // 这里可以添加加载练习历史的逻辑
-  const container = document.getElementById("practiceHistoryList")
-  if (container) {
+  const container = document.getElementById("practiceHistoryList");
+  if (!container) return;
+
+  showLoading(true);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/student/getPracticeHistory`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // 如果需要认证头（如 token），可在此添加
+        // 例如：Authorization: `Bearer ${localStorage.getItem("token")}`
+      },
+    });
+
+    if (response) {
+      const result = await response.json();
+      const history = result.data || [];
+      renderPracticeHistory(history);
+    } else {
+      showNotification("加载练习历史失败", "error");
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-clipboard-check"></i>
+          <h3>暂无练习记录</h3>
+          <p>完成练习后记录会显示在这里</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error("加载练习历史失败:", error);
+    showNotification("网络错误，请稍后重试", "error");
     container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-clipboard-check"></i>
-                <h3>暂无练习记录</h3>
-                <p>完成练习后记录会显示在这里</p>
-            </div>
-        `
+      <div class="empty-state">
+        <i class="fas fa-clipboard-check"></i>
+        <h3>暂无练习记录</h3>
+        <p>完成练习后记录会显示在这里</p>
+      </div>
+    `;
+  } finally {
+    showLoading(false);
   }
+}
+
+// 渲染练习历史
+function renderPracticeHistory(history) {
+  const container = document.getElementById("practiceHistoryList");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!history || history.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-clipboard-check"></i>
+        <h3>暂无练习记录</h3>
+        <p>完成练习后记录会显示在这里</p>
+      </div>
+    `;
+    return;
+  }
+
+  history.forEach((item) => {
+    const historyItem = document.createElement("div");
+    historyItem.className = "history-item";
+    historyItem.innerHTML = `
+      <h4>题目 #${item.questionId}</h4>
+      <p><strong>知识点:</strong> ${item.knowledgePoint || "未知"}</p>
+      <p><strong>题目类型:</strong> ${getQuestionTypeDisplayName(item.questionType)}</p>
+      <p><strong>题目内容:</strong> ${item.questionText || "无内容"}</p>
+      <p><strong>您的答案:</strong> ${item.submittedAnswer || "未提交"}</p>
+      <p><strong>结果:</strong> <span class="${item.isCorrect ? "text-success" : "text-danger"}">${item.isCorrect ? "正确" : "错误"}</span></p>
+      ${item.errorAnalysis ? `<p><strong>分析建议:</strong> ${item.errorAnalysis}</p>` : ""}
+      <p class="time">${formatDate(item.submitTime)}</p>
+    `;
+    container.appendChild(historyItem);
+  });
 }
 
 // 查看课程详情
