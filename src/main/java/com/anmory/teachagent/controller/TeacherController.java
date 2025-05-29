@@ -91,17 +91,74 @@ public class TeacherController {
 
     @RequestMapping("/createLessonPlan")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    public boolean createLessonPlan(String courseName, String question, HttpServletRequest request) throws IOException {
-        log.info("创建课程计划成功");
+    public boolean createLessonPlan(int courseId, String question, HttpServletRequest request) throws IOException {
         String prompt = ragService.getRelevant(question);
         prompt = "请根据以下内容生成:" + prompt;
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("session_user_key");
         String plan = aiService.getLessonPlan(prompt, request, user.getCode());
-        lessonPlanService.insert(user.getUserId(), courseService.selectByName(courseName).getCourseId(), courseName+"课程计划", plan);
+        lessonPlanService.insert(user.getUserId(), courseService.selectById(courseId).getCourseId(),
+                courseService.selectById(courseId).getCourseName()+"课程计划", plan);
+        log.info("创建课程计划成功");
+        return true;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    @RequestMapping("/deleteLessonPlan")
+    public boolean deleteLessonPlan(int lessonPlanId) {
+        lessonPlanService.deleteByLessonPlanId(lessonPlanId);
+        log.info("删除课程计划成功");
         return true;
     }
 
+    @RequestMapping("/updateLessonPlan")
+    public boolean updateLessonPlan(int lessonPlanId, String courseName, String title, String content, HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute("session_user_key");
+        log.info("更新课程计划成功");
+        lessonPlanService.update(lessonPlanId, user.getUserId(), courseService.selectByName(courseName).getCourseId(), title, content);
+        return true;
+    }
+
+    @RequestMapping("/deleteCourse")
+    public boolean deleteCourse(String courseName) {
+        log.info("删除课程成功");
+        courseService.deleteByName(courseName);
+        return true;
+    }
+
+    @RequestMapping("updateCourse")
+    public boolean updateCourse(String courseName, String discipline, String description) {
+        log.info("更新课程成功");
+        courseService.update(courseService.getCourseIdByName(courseName), courseName, discipline, description);
+        return true;
+    }
+
+    @RequestMapping("/getAllMaterial")
+    public List<Material> getAllMaterial() {
+        log.info("获取所有资料成功");
+        return materialService.selectAll();
+    }
+
+    @RequestMapping("/deleteMaterial")
+    public boolean deleteMatrial(int materialId) {
+        log.info("删除资料成功");
+        materialService.deleteById(materialId);
+        return true;
+    }
+
+    @RequestMapping("/updateQuestion")
+    public boolean updateQuestion(int questionId, String question, String answer, String questionType, String knowledgePoint) {
+        log.info("更新问题成功");
+        questionService.update(questionId, question, answer, questionType, knowledgePoint);
+        return true;
+    }
+
+    @RequestMapping("/deleteQuestion")
+    public boolean deleteQuestion(int questionId) {
+        log.info("删除问题成功");
+        questionService.deleteById(questionId);
+        return true;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////
     @RequestMapping("/getAllLessonPlans")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public List<LessonPlan> getLessonPlans() {

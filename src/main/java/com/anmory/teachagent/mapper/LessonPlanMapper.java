@@ -43,4 +43,7 @@ public interface LessonPlanMapper {
 
     @Select("select * from LessonPlan where course_id = #{courseId}")
     List<LessonPlan> selectByCourseId(int courseId);
+
+    @Delete("delete from LessonPlan where lesson_plan_id = #{lessonPlanId}")
+    int deleteByLessonPlanId(int lessonPlanId);
 }

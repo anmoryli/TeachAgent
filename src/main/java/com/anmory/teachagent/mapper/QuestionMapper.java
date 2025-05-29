@@ -1,9 +1,7 @@
 package com.anmory.teachagent.mapper;
 
 import com.anmory.teachagent.model.Question;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -26,4 +24,11 @@ public interface QuestionMapper {
 
     @Select("select * from Question")
     List<Question> selectAll();
+
+    @Update("update Question set question_text = #{questionText}, question_type = #{questionType}, reference_answer = #{referenceAnswer}, " +
+            "knowledge_point = #{knowledgePoint} where question_id = #{questionId}")
+    int update(int questionId, String questionText, String questionType, String referenceAnswer, String knowledgePoint);
+
+    @Delete("delete from Question where question_id = #{id}")
+    int deleteById(int id);
 }

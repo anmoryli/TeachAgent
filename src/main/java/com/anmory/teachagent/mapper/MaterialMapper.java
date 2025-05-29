@@ -1,6 +1,7 @@
 package com.anmory.teachagent.mapper;
 
 import com.anmory.teachagent.model.Material;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -21,4 +22,7 @@ public interface MaterialMapper {
 
     @Insert("insert into Material (title, file_path, material_type) values (#{title}, #{filePath}, #{materialType})")
     int insert(String title, String filePath, String materialType);
+
+    @Delete("delete from Material where material_id = #{id}")
+    int deleteById(int id);
 }

@@ -33,4 +33,7 @@ public interface CourseMapper {
 
     @Select("select course_id from Course where course_name = #{courseName}")
     int getCourseIdByName(String courseName);
+
+    @Delete("delete from Course where course_id = #{courseId}")
+    int deleteByCourseId(int courseId);
 }

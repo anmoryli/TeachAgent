@@ -38,6 +38,10 @@ public class LessonPlanService {
         return lessonPlanMapper.getLessonPlanIdByCourseId(courseId);
     }
 
+    public int deleteByLessonPlanId(int lessonPlanId) {
+        return lessonPlanMapper.deleteByLessonPlanId(lessonPlanId);
+    }
+
     public List<LessonPlan> selectByCourseName(String courseName) {
         return lessonPlanMapper.selectByCourseName(courseName);
     }
@@ -52,5 +56,9 @@ public class LessonPlanService {
 
     public List<LessonPlan> selectByCourseId(int courseId) {
         return lessonPlanMapper.selectByCourseId(courseId);
+    }
+
+    public int update(Integer lessonPlanId, int teacherId, int courseId, String title, String content) {
+        return lessonPlanMapper.update(lessonPlanId, teacherId, courseId, title, content);
     }
 }

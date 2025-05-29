@@ -6,7 +6,7 @@ let practiceQuestions = []
 let currentQuestionIndex = 0
 
 // API基础URL
-const API_BASE_URL = "http://175.24.205.213:8088"
+const API_BASE_URL = "http://localhost:8088"
 
 // 页面初始化
 document.addEventListener("DOMContentLoaded", () => {
@@ -86,9 +86,12 @@ async function handleLogin(e) {
         `${API_BASE_URL}/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&role=${encodeURIComponent(role)}`,
     )
 
-    if (response.ok) {
-      const userData = await response.json()
-      if (userData && userData.userId) {
+    if (response) {
+      console.log("登录响应:", response)
+      const tmp = await response.json()
+      const userData = tmp.data
+      console.log("用户信息", userData)
+      if (userData) {
         currentUser = userData
         localStorage.setItem("currentUser", JSON.stringify(userData))
         showNotification("登录成功！", "success")
@@ -205,7 +208,8 @@ async function loadUsers() {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/viewUsers`)
     if (response.ok) {
-      const users = await response.json()
+      const result = await response.json()
+      const users = result.data || result
       renderUsersTable(users)
       updateUserCount(users.length)
     }
@@ -248,7 +252,8 @@ async function loadResources() {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/viewResources`)
     if (response.ok) {
-      const resources = await response.json()
+      const result = await response.json()
+      const resources = result.data || result
       renderResourcesTable(resources)
     }
   } catch (error) {
@@ -284,8 +289,12 @@ function renderResourcesTable(resources) {
 async function loadDashboardStats() {
   try {
     const [teacherUsage, studentUsage] = await Promise.all([
-      fetch(`${API_BASE_URL}/admin/teacherUsageByDay`).then((r) => r.json()),
-      fetch(`${API_BASE_URL}/admin/studentUsageByDay`).then((r) => r.json()),
+      fetch(`${API_BASE_URL}/admin/teacherUsageByDay`)
+          .then((r) => r.json())
+          .then((result) => result.data || result),
+      fetch(`${API_BASE_URL}/admin/studentUsageByDay`)
+          .then((r) => r.json())
+          .then((result) => result.data || result),
     ])
 
     renderUsageCharts(teacherUsage, studentUsage)
@@ -322,9 +331,15 @@ function renderUsageCharts(teacherData, studentData) {
 async function loadAnalyticsData() {
   try {
     const [studentAnalysis, teacherAnalysis, learningEffect] = await Promise.all([
-      fetch(`${API_BASE_URL}/admin/getStudentAllData`).then((r) => r.json()),
-      fetch(`${API_BASE_URL}/admin/teachEffect`).then((r) => r.json()),
-      fetch(`${API_BASE_URL}/admin/studentLearningEffect`).then((r) => r.json()),
+      fetch(`${API_BASE_URL}/admin/getStudentAllData`)
+          .then((r) => r.json())
+          .then((result) => result.data || result),
+      fetch(`${API_BASE_URL}/admin/teachEffect`)
+          .then((r) => r.json())
+          .then((result) => result.data || result),
+      fetch(`${API_BASE_URL}/admin/studentLearningEffect`)
+          .then((r) => r.json())
+          .then((result) => result.data || result),
     ])
 
     renderAnalyticsTables(studentAnalysis, teacherAnalysis, learningEffect)
@@ -391,7 +406,7 @@ function renderAnalyticsTables(studentData, teacherData, learningData) {
 // 加载教师数据
 async function loadTeacherData() {
   try {
-    await Promise.all([loadCourses(), loadLessonPlans(), loadQuestions(), loadStudentsForAnalysis()])
+    await Promise.all([loadCourses(), loadLessonPlans(), loadQuestions(), loadStudentsForAnalysis(), loadMaterials()])
   } catch (error) {
     console.error("加载教师数据失败:", error)
     showNotification("数据加载失败", "error")
@@ -403,7 +418,8 @@ async function loadCourses() {
   try {
     const response = await fetch(`${API_BASE_URL}/teacher/getAllCourses`)
     if (response.ok) {
-      const courses = await response.json()
+      const result = await response.json()
+      const courses = result.data || result
       renderCoursesGrid(courses)
       populateCourseSelects(courses)
     }
@@ -444,6 +460,9 @@ function renderCoursesGrid(courses) {
                 <button class="btn btn-secondary btn-sm" onclick="editCourse(${course.courseId})">
                     <i class="fas fa-edit"></i> 编辑
                 </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteCourse('${course.courseName}')">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
             </div>
         `
     grid.appendChild(card)
@@ -469,7 +488,8 @@ async function loadLessonPlans() {
   try {
     const response = await fetch(`${API_BASE_URL}/teacher/getAllLessonPlans`)
     if (response.ok) {
-      const lessonPlans = await response.json()
+      const result = await response.json()
+      const lessonPlans = result.data || result
       renderLessonPlansGrid(lessonPlans)
       populateLessonPlanSelect(lessonPlans)
     }
@@ -500,7 +520,7 @@ function renderLessonPlansGrid(lessonPlans) {
     const card = document.createElement("div")
     card.className = "lesson-card card-hover"
     card.innerHTML = `
-            <h3>${lesson.title}</h3>
+            <h3>${lesson.title + lesson.lessonPlanId}</h3>
             <p class="text-truncate-3">${lesson.content}</p>
             <div class="card-actions">
                 <button class="btn btn-primary btn-sm" onclick="viewLesson(${lesson.lessonPlanId})">
@@ -511,6 +531,9 @@ function renderLessonPlansGrid(lessonPlans) {
                 </button>
                 <button class="btn btn-success btn-sm" onclick="exportResource(${lesson.lessonPlanId})">
                     <i class="fas fa-download"></i> 导出
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteLessonPlan(${lesson.lessonPlanId})">
+                    <i class="fas fa-trash"></i> 删除
                 </button>
             </div>
         `
@@ -537,11 +560,45 @@ async function loadQuestions() {
   try {
     const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestions`)
     if (response.ok) {
-      const questions = await response.json()
+      const result = await response.json()
+      const questions = result.data || result
       renderQuestionsGrid(questions)
     }
   } catch (error) {
     console.error("加载题目列表失败:", error)
+  }
+}
+
+// 题目过滤（本地过滤版本）
+async function filterQuestions() {
+  const lessonPlanFilter = document.getElementById("lessonPlanFilter").value;
+  const questionTypeFilter = document.getElementById("questionTypeFilter").value;
+
+  showLoading(true);
+  try {
+    // 加载所有题目
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestions`);
+    if (response.ok) {
+      const result = await response.json();
+      let questions = result.data || result;
+
+      // 应用过滤
+      if (lessonPlanFilter) {
+        questions = questions.filter(q => q.lessonPlanId == lessonPlanFilter);
+      }
+      if (questionTypeFilter) {
+        questions = questions.filter(q => q.questionType === questionTypeFilter);
+      }
+
+      renderQuestionsGrid(questions);
+    } else {
+      showNotification("加载题目列表失败", "error");
+    }
+  } catch (error) {
+    console.error("加载题目列表失败:", error);
+    showNotification("网络错误，请稍后重试", "error");
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -578,6 +635,9 @@ function renderQuestionsGrid(questions) {
                 <button class="btn btn-secondary btn-sm" onclick="editQuestion(${question.questionId})">
                     <i class="fas fa-edit"></i> 编辑
                 </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${question.questionId})">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
             </div>
         `
     grid.appendChild(card)
@@ -599,7 +659,8 @@ async function loadQuestionHistory() {
   try {
     const response = await fetch(`${API_BASE_URL}/student/getAllQuestionsByStudentId`)
     if (response.ok) {
-      const history = await response.json()
+      const result = await response.json()
+      const history = result.data || result
       renderQuestionHistory(history)
     }
   } catch (error) {
@@ -731,7 +792,8 @@ async function generatePractice() {
     )
 
     if (response.ok) {
-      practiceQuestions = await response.json()
+      const result = await response.json()
+      practiceQuestions = result.data || result
       if (practiceQuestions && practiceQuestions.length > 0) {
         currentQuestionIndex = 0
         showPracticeQuestions()
@@ -820,7 +882,8 @@ async function submitPractice() {
     )
 
     if (response.ok) {
-      const result = await response.json()
+      const responseData = await response.json()
+      const result = responseData.data || responseData
       showPracticeResult(result)
       showNotification("答案提交成功", "success")
     } else {
@@ -1043,52 +1106,82 @@ function showCreateCourseModal() {
 // 显示创建教学设计模态框
 function showCreateLessonModal() {
   const content = `
-        <form id="createLessonForm">
-            <div class="form-group">
-                <label for="lessonCourseName">课程名称</label>
-                <input type="text" id="lessonCourseName" name="courseName" required>
-            </div>
-            <div class="form-group">
-                <label for="lessonQuestion">教学要求</label>
-                <textarea id="lessonQuestion" name="question" rows="4" placeholder="请描述您的教学设计要求..." required></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
-                <button type="submit" class="btn btn-primary">生成教学设计</button>
-            </div>
-        </form>
-    `
+    <form id="createLessonForm">
+      <div class="form-group">
+        <label for="lessonCourseName">课程名称</label>
+        <select class="form-control" id="lessonCourseName" name="courseId" required>
+          <option value="">请选择课程</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="lessonQuestion">教学要求</label>
+        <textarea id="lessonQuestion" name="question" rows="4" placeholder="请描述您的教学设计要求..." required></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+        <button type="submit" class="btn btn-primary">生成教学设计</button>
+      </div>
+    </form>
+  `;
 
-  showModal("创建教学设计", content)
+  showModal("创建教学设计", content);
+
+  // 动态加载课程数据
+  loadCoursesForLessonModal();
 
   document.getElementById("createLessonForm").addEventListener("submit", async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const formData = new FormData(e.target)
-    const courseName = formData.get("courseName")
-    const question = formData.get("question")
+    const formData = new FormData(e.target);
+    const courseId = formData.get("courseId"); // 修改为 courseId
+    const question = formData.get("question");
 
-    showLoading(true)
+    showLoading(true);
 
     try {
       const response = await fetch(
-          `${API_BASE_URL}/teacher/createLessonPlan?courseName=${encodeURIComponent(courseName)}&question=${encodeURIComponent(question)}`,
-      )
-
+          `${API_BASE_URL}/teacher/createLessonPlan?courseId=${encodeURIComponent(courseId)}&question=${encodeURIComponent(question)}`
+      );
       if (response.ok) {
-        showNotification("教学设计创建成功", "success")
-        closeModal()
-        loadLessonPlans()
+        showNotification("教学设计创建成功", "success");
+        closeModal();
+        loadLessonPlans();
       } else {
-        showNotification("创建失败，请稍后重试", "error")
+        showNotification("创建失败，请稍后重试", "error");
       }
     } catch (error) {
-      console.error("创建教学设计失败:", error)
-      showNotification("网络错误，请稍后重试", "error")
+      console.error("创建教学设计失败:", error);
+      showNotification("网络错误，请稍后重试", "error");
     } finally {
-      showLoading(false)
+      showLoading(false);
     }
-  })
+  });
+}
+
+// 为模态框加载课程列表
+async function loadCoursesForLessonModal() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllCourses`);
+    if (response.ok) {
+      const result = await response.json();
+      const courses = result.data || result;
+      const select = document.getElementById("lessonCourseName");
+      if (select) {
+        select.innerHTML = '<option value="">请选择课程</option>'; // 清空并保留默认选项
+        courses.forEach((course) => {
+          const option = document.createElement("option");
+          option.value = course.courseId; // 使用 courseId 作为 value
+          option.textContent = course.courseName; // 显示 courseName
+          select.appendChild(option);
+        });
+      }
+    } else {
+      showNotification("获取课程列表失败", "error");
+    }
+  } catch (error) {
+    console.error("加载课程列表失败:", error);
+    showNotification("网络错误，请稍后重试", "error");
+  }
 }
 
 // 显示生成题目模态框
@@ -1167,7 +1260,8 @@ async function loadLessonPlansForModal() {
   try {
     const response = await fetch(`${API_BASE_URL}/teacher/getAllLessonPlans`)
     if (response.ok) {
-      const lessonPlans = await response.json()
+      const result = await response.json()
+      const lessonPlans = result.data || result
       const select = document.getElementById("questionLessonPlan")
       if (select) {
         lessonPlans.forEach((lesson) => {
@@ -1297,9 +1391,13 @@ async function generateAnalysis() {
 async function loadStudentsForAnalysis() {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/viewUsers`)
-    if (response.ok) {
-      const users = await response.json()
+    if (response) {
+      console.log("加载学生列表成功", response)
+      const result = await response.json()
+      const users = result.data || result
+      console.log("用户列表", users)
       const students = users.filter((user) => user.role === "student")
+      console.log("学生列表", students)
 
       const select = document.getElementById("analyticsStudent")
       if (select) {
@@ -1484,7 +1582,8 @@ async function viewCourse(courseId) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/teacher/getAllCourses`)
     if (response.ok) {
-      const courses = await response.json()
+      const result = await response.json()
+      const courses = result.data || result
       const course = courses.find((c) => c.courseId === courseId)
 
       if (course) {
@@ -1543,7 +1642,8 @@ async function editCourse(courseId) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/teacher/getAllCourses`)
     if (response.ok) {
-      const courses = await response.json()
+      const result = await response.json()
+      const courses = result.data || result
       const course = courses.find((c) => c.courseId === courseId)
 
       if (course) {
@@ -1574,12 +1674,26 @@ async function editCourse(courseId) {
         document.getElementById("editCourseForm").addEventListener("submit", async (e) => {
           e.preventDefault()
           const formData = new FormData(e.target)
+          const courseName = formData.get("courseName")
+          const discipline = formData.get("discipline")
+          const description = formData.get("description")
 
-          // 这里需要调用更新课程的API (如果后端有提供)
-          // 由于当前API中没有更新课程的接口，我们模拟更新成功
-          showNotification("课程更新成功", "success")
-          closeModal()
-          loadCourses()
+          try {
+            const updateResponse = await fetch(
+                `${API_BASE_URL}/teacher/updateCourse?courseName=${encodeURIComponent(courseName)}&discipline=${encodeURIComponent(discipline)}&description=${encodeURIComponent(description)}`,
+            )
+
+            if (updateResponse.ok) {
+              showNotification("课程更新成功", "success")
+              closeModal()
+              loadCourses()
+            } else {
+              showNotification("更新失败，请稍后重试", "error")
+            }
+          } catch (error) {
+            console.error("更新课程失败:", error)
+            showNotification("网络错误，请稍后重试", "error")
+          }
         })
       } else {
         showNotification("课程不存在", "error")
@@ -1601,7 +1715,8 @@ async function viewLesson(lessonPlanId) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/teacher/getAllLessonPlans`)
     if (response.ok) {
-      const lessonPlans = await response.json()
+      const result = await response.json()
+      const lessonPlans = result.data || result
       const lesson = lessonPlans.find((l) => l.lessonPlanId === lessonPlanId)
 
       if (lesson) {
@@ -1663,13 +1778,24 @@ async function editLesson(lessonPlanId) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/teacher/getAllLessonPlans`)
     if (response.ok) {
-      const lessonPlans = await response.json()
+      const result = await response.json()
+      const lessonPlans = result.data || result
       const lesson = lessonPlans.find((l) => l.lessonPlanId === lessonPlanId)
 
       if (lesson) {
+        // 获取课程信息用于表单
+        const coursesResponse = await fetch(`${API_BASE_URL}/teacher/getAllCourses`)
+        const coursesResult = await coursesResponse.json()
+        const courses = coursesResult.data || coursesResult
+        const currentCourse = courses.find((c) => c.courseId === lesson.courseId)
+
         const content = `
           <form id="editLessonForm">
             <input type="hidden" name="lessonPlanId" value="${lesson.lessonPlanId}">
+            <div class="form-group">
+              <label for="editLessonCourseName">课程名称</label>
+              <input type="text" id="editLessonCourseName" name="courseName" value="${currentCourse ? currentCourse.courseName : ""}" required>
+            </div>
             <div class="form-group">
               <label for="editLessonTitle">标题</label>
               <input type="text" id="editLessonTitle" name="title" value="${lesson.title}" required>
@@ -1690,11 +1816,27 @@ async function editLesson(lessonPlanId) {
         document.getElementById("editLessonForm").addEventListener("submit", async (e) => {
           e.preventDefault()
           const formData = new FormData(e.target)
+          const lessonPlanId = formData.get("lessonPlanId")
+          const courseName = formData.get("courseName")
+          const title = formData.get("title")
+          const content = formData.get("content")
 
-          // 这里需要调用更新教学设计的API (如果后端有提供)
-          showNotification("教学设计更新成功", "success")
-          closeModal()
-          loadLessonPlans()
+          try {
+            const updateResponse = await fetch(
+                `${API_BASE_URL}/teacher/updateLessonPlan?lessonPlanId=${lessonPlanId}&courseName=${encodeURIComponent(courseName)}&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}`,
+            )
+
+            if (updateResponse.ok) {
+              showNotification("教学设计更新成功", "success")
+              closeModal()
+              loadLessonPlans()
+            } else {
+              showNotification("更新失败，请稍后重试", "error")
+            }
+          } catch (error) {
+            console.error("更新教学设计失败:", error)
+            showNotification("网络错误，请稍后重试", "error")
+          }
         })
       } else {
         showNotification("教学设计不存在", "error")
@@ -1716,7 +1858,8 @@ async function viewQuestion(questionId) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestions`)
     if (response.ok) {
-      const questions = await response.json()
+      const result = await response.json()
+      const questions = result.data || result
       const question = questions.find((q) => q.questionId === questionId)
 
       if (question) {
@@ -1782,7 +1925,8 @@ async function editQuestion(questionId) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestions`)
     if (response.ok) {
-      const questions = await response.json()
+      const result = await response.json()
+      const questions = result.data || result
       const question = questions.find((q) => q.questionId === questionId)
 
       if (question) {
@@ -1821,11 +1965,28 @@ async function editQuestion(questionId) {
         document.getElementById("editQuestionForm").addEventListener("submit", async (e) => {
           e.preventDefault()
           const formData = new FormData(e.target)
+          const questionId = formData.get("questionId")
+          const questionText = formData.get("questionText")
+          const referenceAnswer = formData.get("referenceAnswer")
+          const questionType = formData.get("questionType")
+          const knowledgePoint = formData.get("knowledgePoint")
 
-          // 这里需要调用更新题目的API (如果后端有提供)
-          showNotification("题目更新成功", "success")
-          closeModal()
-          loadQuestions()
+          try {
+            const updateResponse = await fetch(
+                `${API_BASE_URL}/teacher/updateQuestion?questionId=${questionId}&question=${encodeURIComponent(questionText)}&answer=${encodeURIComponent(referenceAnswer)}&questionType=${encodeURIComponent(questionType)}&knowledgePoint=${encodeURIComponent(knowledgePoint)}`,
+            )
+
+            if (updateResponse.ok) {
+              showNotification("题目更新成功", "success")
+              closeModal()
+              loadQuestions()
+            } else {
+              showNotification("更新失败，请稍后重试", "error")
+            }
+          } catch (error) {
+            console.error("更新题目失败:", error)
+            showNotification("网络错误，请稍后重试", "error")
+          }
         })
       } else {
         showNotification("题目不存在", "error")
@@ -1847,7 +2008,8 @@ async function editUser(username) {
     showLoading(true)
     const response = await fetch(`${API_BASE_URL}/admin/viewUsers`)
     if (response.ok) {
-      const users = await response.json()
+      const result = await response.json()
+      const users = result.data || result
       const user = users.find((u) => u.username === username)
 
       if (user) {
@@ -1944,7 +2106,8 @@ async function exportAllResources() {
     // 获取所有教学设计
     const response = await fetch(`${API_BASE_URL}/teacher/getAllLessonPlans`)
     if (response.ok) {
-      const lessonPlans = await response.json()
+      const result = await response.json()
+      const lessonPlans = result.data || result
 
       if (lessonPlans.length === 0) {
         showNotification("暂无可导出的资源", "warning")
@@ -2064,6 +2227,171 @@ async function exportAllResources() {
     }
   } catch (error) {
     console.error("导出资源失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
+  } finally {
+    showLoading(false)
+  }
+}
+
+// 加载资料列表
+async function loadMaterials() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllMaterial`)
+    if (response.ok) {
+      const result = await response.json()
+      const materials = result.data || result
+      renderMaterialsGrid(materials)
+    }
+  } catch (error) {
+    console.error("加载资料列表失败:", error)
+  }
+}
+
+// 渲染资料网格
+function renderMaterialsGrid(materials) {
+  // 检查是否有资料管理区域，如果没有则创建
+  const materialsSection = document.getElementById("teacher-materials-list")
+  if (!materialsSection) {
+    // 在资料上传区域下方添加资料列表
+    const materialsContainer = document.getElementById("teacher-materials")
+    if (materialsContainer) {
+      const listSection = document.createElement("div")
+      listSection.innerHTML = `
+        <h3 style="margin-top: 30px; margin-bottom: 20px;">已上传资料</h3>
+        <div id="materialsGrid" class="materials-grid"></div>
+      `
+      materialsContainer.appendChild(listSection)
+    }
+  }
+
+  const grid = document.getElementById("materialsGrid")
+  if (!grid) return
+
+  grid.innerHTML = ""
+
+  if (materials.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-file"></i>
+        <h3>暂无资料</h3>
+        <p>上传文件后会显示在这里</p>
+      </div>
+    `
+    return
+  }
+
+  materials.forEach((material) => {
+    const card = document.createElement("div")
+    card.className = "material-card card-hover"
+    card.innerHTML = `
+      <div class="material-info">
+        <i class="fas fa-file-alt"></i>
+        <div>
+          <h4>${material.title}</h4>
+          <p><span class="badge badge-info">${material.materialType}</span></p>
+          <p class="text-muted">${formatDate(material.createTime)}</p>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteMaterial(${material.materialId})">
+          <i class="fas fa-trash"></i> 删除
+        </button>
+      </div>
+    `
+    grid.appendChild(card)
+  })
+}
+
+// 删除课程
+async function deleteCourse(courseName) {
+  if (!confirm(`确定要删除课程"${courseName}"吗？此操作不可撤销！`)) {
+    return
+  }
+
+  try {
+    showLoading(true)
+    const response = await fetch(`${API_BASE_URL}/teacher/deleteCourse?courseName=${encodeURIComponent(courseName)}`)
+
+    if (response.ok) {
+      showNotification("课程删除成功", "success")
+      loadCourses()
+    } else {
+      showNotification("删除失败，请稍后重试", "error")
+    }
+  } catch (error) {
+    console.error("删除课程失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
+  } finally {
+    showLoading(false)
+  }
+}
+
+// 删除教学设计
+async function deleteLessonPlan(lessonPlanId) {
+  if (!confirm("确定要删除这个教学设计吗？此操作不可撤销！")) {
+    return
+  }
+
+  try {
+    showLoading(true)
+    const response = await fetch(`${API_BASE_URL}/teacher/deleteLessonPlan?lessonPlanId=${lessonPlanId}`)
+
+    if (response.ok) {
+      showNotification("教学设计删除成功", "success")
+      loadLessonPlans()
+    } else {
+      showNotification("删除失败，请稍后重试", "error")
+    }
+  } catch (error) {
+    console.error("删除教学设计失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
+  } finally {
+    showLoading(false)
+  }
+}
+
+// 删除题目
+async function deleteQuestion(questionId) {
+  if (!confirm("确定要删除这个题目吗？此操作不可撤销！")) {
+    return
+  }
+
+  try {
+    showLoading(true)
+    const response = await fetch(`${API_BASE_URL}/teacher/deleteQuestion?questionId=${questionId}`)
+
+    if (response.ok) {
+      showNotification("题目删除成功", "success")
+      loadQuestions()
+    } else {
+      showNotification("删除失败，请稍后重试", "error")
+    }
+  } catch (error) {
+    console.error("删除题目失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
+  } finally {
+    showLoading(false)
+  }
+}
+
+// 删除资料
+async function deleteMaterial(materialId) {
+  if (!confirm("确定要删除这个资料吗？此操作不可撤销！")) {
+    return
+  }
+
+  try {
+    showLoading(true)
+    const response = await fetch(`${API_BASE_URL}/teacher/deleteMaterial?materialId=${materialId}`)
+
+    if (response.ok) {
+      showNotification("资料删除成功", "success")
+      loadMaterials()
+    } else {
+      showNotification("删除失败，请稍后重试", "error")
+    }
+  } catch (error) {
+    console.error("删除资料失败:", error)
     showNotification("网络错误，请稍后重试", "error")
   } finally {
     showLoading(false)

@@ -45,4 +45,8 @@ public class CourseService {
     public Course selectById(int courseId) {
         return courseMapper.selectById(courseId);
     }
+
+    public int deleteByCourseId(int courseId) {
+        return courseMapper.deleteByCourseId(courseId);
+    }
 }

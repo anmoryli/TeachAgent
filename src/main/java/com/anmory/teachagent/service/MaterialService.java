@@ -25,4 +25,8 @@ public class MaterialService {
     public List<Material> selectAll() {
         return materialMapper.selectAll();
     }
+
+    public int deleteById(int id) {
+        return materialMapper.deleteById(id);
+    }
 }

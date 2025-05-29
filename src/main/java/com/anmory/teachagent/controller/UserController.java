@@ -47,14 +47,14 @@ public class UserController {
     @Autowired
     QuestionService questionService;
     @RequestMapping("/login")
-    public User login(String username, String password, String role, HttpSession session){
+    public Result<User> login(String username, String password, String role, HttpSession session){
         log.info("用户登录: username = {}, password = {}, role = {}", username, password, role);
         User user = userService.selectByName(username);
         if (user == null || !user.getPassword().equals(password) || !user.getRole().equals(role)) {
             return null;
         }
         session.setAttribute("session_user_key", user);
-        return user;
+        return Result.success("登录成功",user);
     }
 
     @RequestMapping("/getAllQuestions")

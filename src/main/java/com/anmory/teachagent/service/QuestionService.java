@@ -55,4 +55,12 @@ public class QuestionService {
     public List<Question> selectAll() {
         return questionMapper.selectAll();
     }
+
+    public int update(int questionId, String questionText, String questionType, String referenceAnswer, String knowledgePoint) {
+        return questionMapper.update(questionId, questionText, questionType, referenceAnswer, knowledgePoint);
+    }
+
+    public int deleteById(int id) {
+        return questionMapper.deleteById(id);
+    }
 }
