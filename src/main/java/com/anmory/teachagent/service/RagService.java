@@ -84,6 +84,6 @@ public class RagService {
         System.out.println("匹配结果"+relevant);
 
         // 只返回第一个匹配
-        return relevant.get(0).getAsJsonObject().get("text").getAsString();
+        return relevant.get(0).getAsJsonObject().get("content").getAsString();
     }
 }

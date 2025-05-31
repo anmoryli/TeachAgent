@@ -46,13 +46,25 @@ public class StudentController {
     @RequestMapping("/askQuestion")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public String askQuestion(int courseId, String questionText, HttpServletRequest request) throws IOException {
+        // 获取 RAG 检索的相关内容
         String prompt = ragService.getRelevant(questionText);
+        // 获取课程信息
         Course course = courseService.selectById(courseId);
+        if (course == null) {
+            throw new IOException("课程不存在");
+        }
         // 获取用户ID
         User user = (User) request.getSession().getAttribute("session_user_key");
+        if (user == null) {
+            throw new IOException("用户未登录");
+        }
         int userId = user.getUserId();
-        questionText = "生成一个关于" + course.getCourseName() + "的" + questionText + "需要参考的资料是:" + prompt;
+        // 构造提示词，结合课程名和检索内容
+        questionText = "生成一个关于 " + course.getCourseName() + " 的 " + questionText +
+                " 需要参考的资料是: " + prompt;
+        // 获取 AI 回答
         String answer = aiService.getStuAnswer(questionText, request);
+        // 记录问题和答案
         answerService.insert(userId, questionText, answer);
         return answer;
     }
