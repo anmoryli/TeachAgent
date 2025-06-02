@@ -76,12 +76,12 @@ public class StudentController {
         return answer;
     }
 
-    @RequestMapping("/getAllQuestionsByStudentId")
+    @RequestMapping("/getAllQuestionsByUserId")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    public List<Answer> getAllQuestionsByStudentId(HttpServletRequest request) {
+    public List<Question> getAllQuestionsByStudentId(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("session_user_key");
         int studentId = user.getUserId();
-        return answerService.selectByStudentId(studentId);
+        return questionService.selectByUserId(studentId);
     }
 
     @RequestMapping("/getAllQuestions")
@@ -93,7 +93,11 @@ public class StudentController {
 
     @RequestMapping("/getPracticeQuestions")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    public List<Question> getPracticeQuestions(int courseId, String knowledgePoint, int quantity, HttpServletRequest request) throws IOException {
+    public List<Question> getPracticeQuestions(int courseId,
+                                               String knowledgePoint,
+                                               int quantity,
+                                               HttpServletRequest request) throws IOException {
+        log.info("生成题目数量: {}", quantity);
         List<Question> questions = new ArrayList<>();
         String courseName = courseService.selectById(courseId).getCourseName();
         User user = (User) request.getSession().getAttribute("session_user_key");
@@ -102,7 +106,10 @@ public class StudentController {
         }
         List<PracticeRecord> practiceRecord = practiceRecordService.selectByStudentId(user.getUserId());
         // 获取课程和课时计划ID
-        int lessonPlanId = lessonPlanService.getLessonPlanIdByCourseId(courseId);
+        Integer lessonPlanId = lessonPlanService.getLessonPlanIdByCourseId(courseId);
+        if(lessonPlanId < 1) {
+            lessonPlanId = 1;
+        }
         String question = "生成一个关于" + courseName + "的" + knowledgePoint + "的题目,你需要基于这些历史的练习来生成：" + practiceRecord.toString();
         String prompt = ragService.getRelevant(question);
         question = question + "，需要参考的资料是:" + prompt;
@@ -111,14 +118,15 @@ public class StudentController {
         List<CompletableFuture<Question>> futures = new ArrayList<>();
         for (int i = 0; i < quantity; i++) {
             String finalQuestion = question;
+            int finalLessonPlanId = lessonPlanId;
             CompletableFuture<Question> future = CompletableFuture.supplyAsync(() -> {
+//                try {
+//                    String ans = String.valueOf(questionService.generateQuestionAsync(finalQuestion, knowledgePoint, prompt, request, finalLessonPlanId));
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
                 try {
-                    String ans = String.valueOf(questionService.generateQuestionAsync(finalQuestion, knowledgePoint, prompt, request, lessonPlanId));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                try {
-                    return questionService.generateQuestionAsync(finalQuestion, knowledgePoint, prompt, request, lessonPlanId).join();
+                    return questionService.generateQuestionAsync(finalQuestion, knowledgePoint, prompt, request, finalLessonPlanId).join();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -129,7 +137,7 @@ public class StudentController {
         for (CompletableFuture<Question> future : futures) {
             try {
                 questions.add(future.get());
-                questionService.insert(lessonPlanId, question, future.get().getQuestionType(), aiService.getReferenceAnswer(question, request), knowledgePoint);
+                questionService.insert(lessonPlanId, question, future.get().getQuestionType(), aiService.getReferenceAnswer(question, request), knowledgePoint, user.getUserId());
 
             } catch (Exception e) {
                 e.printStackTrace(); // 出错打印日志，防炸
@@ -137,6 +145,14 @@ public class StudentController {
         }
         executor.shutdown(); // 关线程池
         return questions;
+    }
+
+    @RequestMapping("/getSubmitHistory")
+    public Result<List<Answer>> getSubmitHistory(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute("session_user_key");
+        int studentId = user.getUserId();
+        List<Answer> answers = answerService.selectByStudentId(studentId);
+        return Result.success("获取提交记录成功", answers);
     }
 
     @RequestMapping("/getPracticeHistory")
@@ -147,7 +163,7 @@ public class StudentController {
         return Result.success("获取练习记录成功", practiceRecord);
     }
 
-    @PostMapping("/submitPractice")
+    @RequestMapping("/submitPractice")
     public PracticeRecord submitPractice(@RequestBody SubmitRequest request, HttpServletRequest httpRequest) throws Exception {
         long start = System.currentTimeMillis();
         int questionId = request.getQuestionId();

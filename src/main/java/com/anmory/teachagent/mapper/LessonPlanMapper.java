@@ -29,7 +29,7 @@ public interface LessonPlanMapper {
     int update(Integer lessonPlanId, int teacherId, int courseId, String title, String content);
 
     @Select("select lesson_plan_id from LessonPlan where course_id = #{courseId} limit 1")
-    int getLessonPlanIdByCourseId(int courseId);
+    Integer getLessonPlanIdByCourseId(int courseId);
 
     @Select("select * from LessonPlan where course_id = (select course_id from Course where course_name = #{courseName})")
     List<LessonPlan> selectByCourseName(String courseName);

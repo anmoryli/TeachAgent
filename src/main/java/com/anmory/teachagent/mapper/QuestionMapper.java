@@ -16,8 +16,11 @@ public interface QuestionMapper {
     @Select("select * from Question where lesson_plan_id = #{lessonPlanId}")
     List<Question> selectByLessonPlanId(int lessonPlanId);
 
-    @Insert("insert into Question (lesson_plan_id, question_text, question_type, reference_answer, knowledge_point) values (#{lessonPlanId}, #{questionText}, #{questionType}, #{referenceAnswer}, #{knowledgePoint})")
-    int insert(int lessonPlanId, String questionText, String questionType, String referenceAnswer, String knowledgePoint);
+    @Select("select * from Question where user_id = #{userId}")
+    List<Question> selectByUserId(int userId);
+
+    @Insert("insert into Question (lesson_plan_id, question_text, question_type, reference_answer, knowledge_point, user_id) values (#{lessonPlanId}, #{questionText}, #{questionType}, #{referenceAnswer}, #{knowledgePoint},#{userId})")
+    int insert(int lessonPlanId, String questionText, String questionType, String referenceAnswer, String knowledgePoint, int userId);
 
     @Select("select question_text from Question where Question.question_id = #{questionId}")
     String getQuestionTextById(int questionId);

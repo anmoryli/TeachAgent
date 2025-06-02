@@ -299,7 +299,7 @@ public class TeacherController {
                         // 插入问题
                         if (question != null && referenceAnswer != null) {
                             try {
-                                questionService.insert(lessonPlanId, question, questionType, referenceAnswer, knowledgePoint);
+                                questionService.insert(lessonPlanId, question, questionType, referenceAnswer, knowledgePoint, user.getUserId());
                                 log.debug("成功插入问题 {} for lessonPlanId: {}", i + 1, lessonPlanId);
                             } catch (Exception e) {
                                 log.error("插入问题 {} 到数据库失败: {}", i + 1, e.getMessage(), e);
@@ -356,6 +356,18 @@ public class TeacherController {
         log.info("获取课程问题成功");
         LessonPlan lessonPlan = lessonPlanService.selectById(lessonPlanId);
         return questionService.selectByLessonPlanId(lessonPlan.getLessonPlanId());
+    }
+
+    @RequestMapping("/getAllQuestionsByUserId")
+    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
+    public List<Question> getAllQuestionsByTeacherId(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute("session_user_key");
+        if(user == null) {
+            log.error("用户未登录");
+            return null;
+        }
+        log.info("获取教师所有问题成功");
+        return questionService.selectByUserId(user.getUserId());
     }
 
     @RequestMapping("/viewLearningAnalysis")

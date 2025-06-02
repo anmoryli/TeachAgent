@@ -34,8 +34,8 @@ public class LessonPlanService {
         return lessonPlanMapper.selectOne(lessonPlanId);
     }
 
-    public int getLessonPlanIdByCourseId(int courseId) {
-        return lessonPlanMapper.getLessonPlanIdByCourseId(courseId);
+    public Integer getLessonPlanIdByCourseId(int courseId) {
+        return lessonPlanMapper.getLessonPlanIdByCourseId(courseId) == null ? 1 : lessonPlanMapper.getLessonPlanIdByCourseId(courseId);
     }
 
     public int deleteByLessonPlanId(int lessonPlanId) {

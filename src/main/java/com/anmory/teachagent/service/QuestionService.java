@@ -27,8 +27,8 @@ public class QuestionService {
     @Autowired
     CourseService courseService;
 
-    public int insert(int lessonPlanId, String questionText, String questionType, String referenceAnswer, String knowledgePoint) {
-        return questionMapper.insert(lessonPlanId, questionText, questionType, referenceAnswer, knowledgePoint);
+    public int insert(int lessonPlanId, String questionText, String questionType, String referenceAnswer, String knowledgePoint, int userId) {
+        return questionMapper.insert(lessonPlanId, questionText, questionType, referenceAnswer, knowledgePoint, userId);
     }
 
     public List<Question> selectByLessonPlanId(int lessonPlanId) {
@@ -49,6 +49,10 @@ public class QuestionService {
         que.setReferenceAnswer(aiService.getReferenceAnswer(aiService.getQuestion(question, knowledgePoint, prompt, request), request));
         que.setLessonPlanId(lessonPlanId);
         return CompletableFuture.completedFuture(que);
+    }
+
+    public List<Question> selectByUserId(int userId) {
+        return questionMapper.selectByUserId(userId);
     }
 
     public List<Question> selectAll() {
