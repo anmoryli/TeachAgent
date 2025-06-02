@@ -49,4 +49,16 @@ public class AnalyseService {
     public List<StudentLearningEffectDto> studentLearningEffect() {
         return analyseMapper.studentLearningEffect();
     }
+
+    public List<ActiveModuleDto> activeModule() {
+        return analyseMapper.activeModule();
+    }
+
+    public List<LessonPlanCostDto> lessonPlanCost() {
+        return analyseMapper.lessonPlanCost();
+    }
+
+    public List<LessonPlanCostDto> generateQuestionCost() {
+        return analyseMapper.generateQuestionCost();
+    }
 }

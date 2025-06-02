@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 /**
- * @author Anmory/李梦杰
+ * @author Anmory
  * @description TODO
  * @date 2025-05-10 上午11:10
  */

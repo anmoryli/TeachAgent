@@ -3,6 +3,7 @@ package com.anmory.teachagent.service;
 import com.anmory.teachagent.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
@@ -20,6 +21,7 @@ import java.util.List;
  * @date 2025-05-10 下午3:36
  */
 
+@Slf4j
 @Service
 public class AiService {
     @Autowired
@@ -142,6 +144,7 @@ public class AiService {
     }
 
     public String giveSumAndTeachSuggest(List<Object> questions, HttpServletRequest request) {
+        log.info("学生总体信息:" + questions);
         String systemPrompt = promptService.selectByPromptId(8).getPromptText();
         User user = (User) request.getSession().getAttribute("session_user_key");
         if(user == null) {
@@ -152,10 +155,11 @@ public class AiService {
                 .defaultSystem(systemPrompt)
                 .defaultAdvisors(messageChatMemoryAdvisor)
                 .build();
-
         return chatClient
-                .prompt("你需要根据" + questions +"给出知识掌握情况总结和教学建议，并且给出的格式是纯文本的格式，将这两个方面分开给出，不能带有任何其他格式" +
-                        "可以稍微使用一点markdown但不能太多。")
+                .prompt("你需要根据<questions>" + questions +"给出学生知识掌握情况总结和老师教学建议，并且给出的格式是纯文本的格式，将这两个方面分开给出，不能带有任何其他格式" +
+                        "可以稍微使用一点markdown但不能太多。" +
+                        "你的回答应该全面，至少500字，全面分析学生和老师。如果有空的部分，你可以忽略。" +
+                        "如果你收到的<questions>是空的，那么你应该说此学生最近没有任何活动")
                 .system(systemPrompt)
                 .advisors(messageChatMemoryAdvisor)
                 .call()

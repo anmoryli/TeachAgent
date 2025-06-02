@@ -12,11 +12,13 @@
 -- 描述：创建 5 个用户，涵盖管理员、教师和学生角色，用于后续关联。
 -- --------------------------------------
 INSERT INTO User (username, password, role, email) VALUES
-                                                       ('admin1', 'hashed_password_1', 'admin', 'admin1@example.com'), -- user_id: 1, 管理员
+                                                       ('admin', 'admin', 'admin', 'admin1@example.com'), -- user_id: 1, 管理员
                                                        ('teacher1', 'hashed_password_2', 'teacher', 'teacher1@example.com'), -- user_id: 2, 教师 1
                                                        ('teacher2', 'hashed_password_3', 'teacher', 'teacher2@example.com'), -- user_id: 3, 教师 2
                                                        ('student1', 'hashed_password_4', 'student', 'student1@example.com'), -- user_id: 4, 学生 1
-                                                       ('student2', 'hashed_password_5', 'student', 'student2@example.com'); -- user_id: 5, 学生 2
+                                                       ('student2', 'hashed_password_5', 'student', 'student2@example.com'), -- user_id: 5, 学生 2
+                                                       ('anmory', 'lmjnb666', 'teacher', 'student2@example.com'), -- user_id: 5, 学生 2
+                                                       ('stu', 'stu', 'student', 'student2@example.com'); -- user_id: 5, 学生 2
 
 -- --------------------------------------
 -- 2. 插入 Course 表数据（无依赖）

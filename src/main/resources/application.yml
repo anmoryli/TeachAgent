@@ -24,6 +24,11 @@ spring:
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 server:
   port: 8088
+  servlet:
+    session:
+      timeout: 36000s  # Session 超时时间，单位秒（这里设为 1 小时）
+      cookie:
+        max-age: PT36000S  # Cookie 有效期，单位秒

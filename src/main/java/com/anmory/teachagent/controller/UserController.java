@@ -1,5 +1,6 @@
 package com.anmory.teachagent.controller;
 
+import com.anmory.teachagent.config.PasswordUtil;
 import com.anmory.teachagent.dto.*;
 import com.anmory.teachagent.model.LessonPlan;
 import com.anmory.teachagent.model.Material;
@@ -19,10 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -49,14 +47,25 @@ public class UserController {
     @Autowired
     CountService countService;
     @RequestMapping("/login")
-    public Result<User> login(String username, String password, String role, HttpSession session){
+    public Result<User> login(String username, String password, String role, HttpSession session) {
         log.info("用户登录: username = {}, password = {}, role = {}", username, password, role);
         User user = userService.selectByName(username);
-        if (user == null || !user.getPassword().equals(password) || !user.getRole().equals(role)) {
-            return null;
+        if(user.getCode().equals("001")) {
+            return Result.success("管理员登录", user);
+        }
+        if (user == null) {
+            return Result.fail("用户不存在", "用户不存在");
+        }
+        // 对传入的明文密码进行加密后再比较
+        String hashedInputPassword = PasswordUtil.hashPassword(password);
+        if (!user.getPassword().equals(hashedInputPassword)) {
+            return Result.fail("密码错误", "密码错误");
+        }
+        if (!user.getRole().equals(role)) {
+            return Result.fail("角色不匹配", "角色不匹配");
         }
         session.setAttribute("session_user_key", user);
-        return Result.success("登录成功",user);
+        return Result.success("登录成功", user);
     }
 
     @RequestMapping("/getAllQuestions")
@@ -67,7 +76,9 @@ public class UserController {
 
     @RequestMapping("/register")
     public boolean register(String username, String password, String role, String email, String realName, String code) {
-        return userService.insert(username, password, role, email, realName, code) > 0;
+        // 注册时对密码进行加密再存储
+        String hashedPassword = PasswordUtil.hashPassword(password);
+        return userService.insert(username, hashedPassword, role, email, realName, code) > 0;
     }
 
     @RequestMapping("/viewUsers")
@@ -77,7 +88,9 @@ public class UserController {
 
     @RequestMapping("/addUser")
     public boolean addUser(String username, String password, String role, String email, String realName, String code) {
-        return userService.insert(username, password, role, email, realName, code) > 0;
+        // 注册时对密码进行加密再存储
+        String hashedPassword = PasswordUtil.hashPassword(password);
+        return userService.insert(username, hashedPassword, role, email, realName, code) > 0;
     }
 
     @RequestMapping("/deleteUser")
@@ -138,50 +151,50 @@ public class UserController {
 
     @RequestMapping("/exportResource")
 //    @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
-    public ResponseEntity<byte[]> exportResource(int lessonPlanId) {
+    public ResponseEntity<byte[]> exportResource(@RequestParam("lessonPlanId") int lessonPlanId) {
         try {
             // 获取课程计划
             LessonPlan lessonPlan = lessonPlanService.selectById(lessonPlanId);
             if (lessonPlan == null) {
                 log.error("课程计划不存在: lessonPlanId={}", lessonPlanId);
-                return ResponseEntity.badRequest().body(null); // 课程计划不存在
+                throw new RuntimeException("课程计划不存在");
             }
 
             // 记录内容
             log.info("课程计划标题: {}", lessonPlan.getTitle());
             log.info("课程计划内容: {}", lessonPlan.getContent());
 
-            // 创建 PDF 文件流
+            // 创建 PDF 字节流
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PdfWriter writer = new PdfWriter(baos);
-            PdfDocument pdf = new PdfDocument(writer);
-            Document document = new Document(pdf);
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document document = new Document(pdfDoc);
 
-            // 设置支持中文的字体
+            // 设置中文字体
             PdfFont font = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H");
             document.setFont(font);
 
-            // 添加课程计划标题和内容
-            document.add(new Paragraph("课程计划: " + lessonPlan.getTitle()).setFont(font));
-            document.add(new Paragraph("内容: " + lessonPlan.getContent()).setFont(font));
+            // 添加内容
+            document.add(new Paragraph("课程计划: " + lessonPlan.getTitle()));
+            document.add(new Paragraph("内容:").setBold());
+            document.add(new Paragraph(lessonPlan.getContent()));
 
             // 关闭文档
             document.close();
 
-            // 设置 HTTP 头
+            // 构建响应头
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("attachment", "lesson_plan_" + lessonPlanId + ".pdf");
 
-            // 返回文件流
+            // 返回响应
             return ResponseEntity.ok()
                     .headers(headers)
                     .body(baos.toByteArray());
 
         } catch (Exception e) {
-            log.error("生成 PDF 失败: lessonPlanId={}, 错误: {}", lessonPlanId, e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null); // 服务器错误
+            log.error("导出 PDF 失败: lessonPlanId={}, 错误={}", lessonPlanId, e.getMessage(), e);
+            throw new RuntimeException("生成 PDF 文件失败：" + e.getMessage());
         }
     }
 

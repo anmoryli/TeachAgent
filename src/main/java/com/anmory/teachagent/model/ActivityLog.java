@@ -17,4 +17,5 @@ public class ActivityLog {
     private String role;
     private String module;
     private Date actionTime;
+    private long costTime;
 }

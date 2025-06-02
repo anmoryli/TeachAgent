@@ -20,4 +20,11 @@ public class Question {
     private String knowledgePoint;
     private Date createTime;
     private Date updatedTime;
+
+    public Question(Integer lessonPlanId, String question, String questionType, String referenceAnswer, String knowledgePoint) {
+    }
+
+    public Question() {
+
+    }
 }

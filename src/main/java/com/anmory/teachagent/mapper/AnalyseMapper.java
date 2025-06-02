@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 /**
- * @author Anmory/李梦杰
+ * @author Anmory
  * @description TODO
  * @date 2025-05-24 下午10:48
  */
@@ -129,4 +129,41 @@ public interface AnalyseMapper {
             """)
     List<StudentLearningEffectDto> studentLearningEffect();
 
+    // 活跃板块分析
+    @Select("""
+            SELECT
+                module,
+                COUNT(*) AS activity_count
+            FROM ActivityLog
+            GROUP BY module
+            ORDER BY activity_count DESC LIMIT 100
+            """)
+    List<ActiveModuleDto> activeModule();
+
+    // 备课时间分析
+    @Select("""
+            SELECT\s
+                module,
+                AVG(CAST(cost_time AS UNSIGNED)) AS avg_cost_time,
+                MIN(CAST(cost_time AS UNSIGNED)) AS min_cost_time,
+                MAX(CAST(cost_time AS UNSIGNED)) AS max_cost_time,
+                COUNT(*) AS activity_count
+            FROM ActivityLog
+            WHERE module = '备课' AND cost_time IS NOT NULL
+            GROUP BY module LIMIT 100
+            """)
+    List<LessonPlanCostDto> lessonPlanCost();
+
+    @Select("""
+            SELECT\s
+                module,
+                AVG(CAST(cost_time AS UNSIGNED)) AS avg_cost_time,
+                MIN(CAST(cost_time AS UNSIGNED)) AS min_cost_time,
+                MAX(CAST(cost_time AS UNSIGNED)) AS max_cost_time,
+                COUNT(*) AS activity_count
+            FROM ActivityLog
+            WHERE module = '生成问题' AND cost_time IS NOT NULL
+            GROUP BY module;
+            """)
+    List<LessonPlanCostDto> generateQuestionCost();
 }

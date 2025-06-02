@@ -42,10 +42,13 @@ public class StudentController {
     RagService ragService;
     @Autowired
     JudgePrommingService judgePrommingService;
+    @Autowired
+    ActivityLogService activityLogService;
 
     @RequestMapping("/askQuestion")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
     public String askQuestion(int courseId, String questionText, HttpServletRequest request) throws IOException {
+        long start = System.currentTimeMillis();
         // 获取 RAG 检索的相关内容
         String prompt = ragService.getRelevant(questionText);
         // 获取课程信息
@@ -66,6 +69,10 @@ public class StudentController {
         String answer = aiService.getStuAnswer(questionText, request);
         // 记录问题和答案
         answerService.insert(userId, questionText, answer);
+        long end = System.currentTimeMillis();
+        long costTime = end - start;
+        costTime = costTime / 1000;
+        activityLogService.insert(user.getUserId(), "student", "提问", costTime);
         return answer;
     }
 
@@ -142,6 +149,7 @@ public class StudentController {
 
     @PostMapping("/submitPractice")
     public PracticeRecord submitPractice(@RequestBody SubmitRequest request, HttpServletRequest httpRequest) throws Exception {
+        long start = System.currentTimeMillis();
         int questionId = request.getQuestionId();
         String submittedAnswer = request.getSubmittedAnswer();
         String questionType = aiService.getQuestionType(submittedAnswer, httpRequest);
@@ -179,7 +187,10 @@ public class StudentController {
 
         // 保存记录
         practiceRecordService.insert(userId, questionId, submittedAnswer, isCorrect, errorAnalysis);
-
+        long end = System.currentTimeMillis();
+        long costTime = end - start;
+        costTime = costTime / 1000;
+         activityLogService.insert(user.getUserId(), "student", "做题", costTime);
         return practiceRecord;
     }
 

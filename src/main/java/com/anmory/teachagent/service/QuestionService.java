@@ -2,7 +2,6 @@ package com.anmory.teachagent.service;
 
 import com.anmory.teachagent.mapper.QuestionMapper;
 import com.anmory.teachagent.model.Question;
-import com.anmory.teachagent.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

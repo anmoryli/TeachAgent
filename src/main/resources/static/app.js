@@ -1483,13 +1483,15 @@ async function generateAnalysis() {
         `${API_BASE_URL}/teacher/viewLearningAnalysis?courseId=${courseId}&studentId=${studentId}`,
     )
 
-    if (response.ok) {
-      const analysis = await response.text()
+    if (response) {
+      const analysis = await response.json();
+      console.log("学情分析结果", analysis);
+      console.log("分析报告生成成功",analysis.data);
       const resultDiv = document.getElementById("analysisResult")
       resultDiv.innerHTML = `
                 <h3>学情分析报告</h3>
                 <div class="analysis-content">
-                    ${analysis}
+                    ${analysis.data}
                 </div>
             `
       showNotification("分析报告生成成功", "success")
@@ -1535,28 +1537,36 @@ async function loadStudentsForAnalysis() {
 // 导出资源
 async function exportResource(lessonPlanId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/exportResource?lessonPlanId=${lessonPlanId}`)
+    const response = await fetch(`${API_BASE_URL}/admin/exportResource?lessonPlanId=${lessonPlanId}`);
 
-    if (response.ok) {
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `lesson_plan_${lessonPlanId}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      showNotification("资源导出成功", "success")
-    } else {
-      showNotification("导出失败，请稍后重试", "error")
+    if (!response.ok) {
+      showNotification("导出失败，请稍后重试", "error");
+      return;
     }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/pdf")) {
+      const text = await response.text(); // 或者 json()
+      console.error("非 PDF 响应:", text);
+      showNotification("导出失败，服务器返回错误", "error");
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lesson_plan_${lessonPlanId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    showNotification("资源导出成功", "success");
   } catch (error) {
-    console.error("导出资源失败:", error)
-    showNotification("网络错误，请稍后重试", "error")
+    console.error("导出资源失败:", error);
+    showNotification("网络错误，请稍后重试", "error");
   }
 }
-
 // 删除用户
 async function deleteUser(username) {
   if (!confirm("确定要删除这个用户吗？")) {

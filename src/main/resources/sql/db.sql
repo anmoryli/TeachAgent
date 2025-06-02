@@ -68,7 +68,7 @@ CREATE TABLE Question (
                           question_id BIGINT PRIMARY KEY AUTO_INCREMENT,
                           lesson_plan_id BIGINT NOT NULL,
                           question_text TEXT NOT NULL,
-                          question_type ENUM('multiple_choice', 'programming', 'short_answer') NOT NULL,
+                          question_type ENUM('multiple_choice', 'programming', 'short_answer', 'single_choice', 'integrated') NOT NULL,
                           reference_answer TEXT NOT NULL, -- 参考答案
                           knowledge_point VARCHAR(100) NOT NULL, -- 关联知识点说明
                           create_time datetime DEFAULT now(),
