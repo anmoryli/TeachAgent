@@ -1,5 +1,6 @@
 package com.anmory.teachagent.controller;
 
+import com.anmory.teachagent.dto.Result;
 import com.anmory.teachagent.model.*;
 import com.anmory.teachagent.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,6 +54,8 @@ public class TeacherController {
     RagService ragService;
     @Autowired
     ActivityLogService activityLogService;
+    @Autowired
+    PPTService pptService;
 
     @RequestMapping("/uploadFile")
     @CrossOrigin(origins = "http://localhost:5173", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
@@ -143,6 +146,12 @@ public class TeacherController {
         costTime = costTime / 1000;
         activityLogService.insert(user.getUserId(), "teacher", "备课", costTime);
         return true;
+    }
+
+    // 生成ppt接口
+    @RequestMapping("/generatePPT")
+    public String generatePPT(String subject) throws IOException {
+        return pptService.genPPT(subject).getData();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////
     @RequestMapping("/deleteLessonPlan")
