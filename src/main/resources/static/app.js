@@ -518,7 +518,14 @@ function renderAnalyticsTables(studentData, teacherData, learningData) {
 // 加载教师数据
 async function loadTeacherData() {
   try {
-    await Promise.all([loadCourses(), loadLessonPlans(), loadQuestions(), loadStudentsForAnalysis(), loadMaterials()])
+    await Promise.all([
+      loadCourses(),
+      loadLessonPlans(),
+      loadQuestions(),
+      loadStudentsForAnalysis(),
+      loadMaterials(),
+      loadTeacherQuestions(), // 添加这行
+    ])
   } catch (error) {
     console.error("加载教师数据失败:", error)
     showNotification("数据加载失败", "error")
@@ -759,7 +766,13 @@ function renderQuestionsGrid(questions) {
 // 加载学生数据
 async function loadStudentData() {
   try {
-    await Promise.all([loadCourses(), loadQuestionHistory(), loadPracticeHistory()])
+    await Promise.all([
+      loadCourses(),
+      loadQuestionHistory(),
+      loadPracticeHistory(),
+      loadStudentPracticeQuestions(), // 添加这行
+      loadSubmitHistory(), // 添加这行
+    ])
   } catch (error) {
     console.error("加载学生数据失败:", error)
     showNotification("数据加载失败", "error")
@@ -769,7 +782,7 @@ async function loadStudentData() {
 // 加载提问历史
 async function loadQuestionHistory() {
   try {
-    const response = await fetch(`${API_BASE_URL}/student/getAllQuestionsByStudentId`)
+    const response = await fetch(`${API_BASE_URL}/student/getAllQuestionsByUserId`)
     if (response.ok) {
       const result = await response.json()
       const history = result.data || result
@@ -830,9 +843,11 @@ async function askQuestion() {
 
   // 添加用户消息到聊天界面
   addMessageToChat(questionText, "user")
+  // 添加一个"正在思考..."的消息
+  addMessageToChat("正在思考中，请稍候...", "assistant-thinking")
   questionInput.value = ""
 
-  showLoading(true)
+  // 不显示全局loading，改为在聊天界面显示思考状态
 
   try {
     const response = await fetch(
@@ -843,16 +858,35 @@ async function askQuestion() {
     if (response) {
       const tmp = await response.json()
       const answer = tmp.data
+
+      // 移除思考消息
+      const thinkingMessage = document.getElementById("thinking-message")
+      if (thinkingMessage) {
+        thinkingMessage.remove()
+      }
+
       addMessageToChat(answer, "assistant")
       showNotification("问题提交成功", "success")
     } else {
+      // 移除思考消息
+      const thinkingMessage = document.getElementById("thinking-message")
+      if (thinkingMessage) {
+        thinkingMessage.remove()
+      }
+      addMessageToChat("抱歉，回答生成失败，请稍后重试", "assistant")
       showNotification("提问失败，请稍后重试", "error")
     }
   } catch (error) {
     console.error("提问失败:", error)
+    // 移除思考消息
+    const thinkingMessage = document.getElementById("thinking-message")
+    if (thinkingMessage) {
+      thinkingMessage.remove()
+    }
+    addMessageToChat("网络错误，请稍后重试", "assistant")
     showNotification("网络错误，请稍后重试", "error")
   } finally {
-    showLoading(false)
+    // 不需要关闭全局loading了
   }
 }
 
@@ -865,14 +899,26 @@ function addMessageToChat(message, sender) {
   const messageDiv = document.createElement("div")
   messageDiv.className = `message ${sender}`
 
-  // 使用 marked.js 渲染 AI 回复的 Markdown 内容
-  const parsedMessage = sender === "assistant" ? marked.parse(message) : escapeHtml(message)
-
-  messageDiv.innerHTML = `
-        <div class="message-content">
-            ${parsedMessage}
+  // 如果是思考状态，添加特殊标识
+  if (sender === "assistant-thinking") {
+    messageDiv.id = "thinking-message"
+    messageDiv.innerHTML = `
+      <div class="message-content thinking">
+        <div class="thinking-dots">
+          <span></span><span></span><span></span>
         </div>
+        <span>${message}</span>
+      </div>
     `
+  } else {
+    // 使用 marked.js 渲染 AI 回复的 Markdown 内容
+    const parsedMessage = sender === "assistant" ? marked.parse(message) : escapeHtml(message)
+    messageDiv.innerHTML = `
+      <div class="message-content">
+        ${parsedMessage}
+      </div>
+    `
+  }
 
   chatMessages.appendChild(messageDiv)
   chatMessages.scrollTop = chatMessages.scrollHeight
@@ -1484,9 +1530,9 @@ async function generateAnalysis() {
     )
 
     if (response) {
-      const analysis = await response.json();
-      console.log("学情分析结果", analysis);
-      console.log("分析报告生成成功",analysis.data);
+      const analysis = await response.json()
+      console.log("学情分析结果", analysis)
+      console.log("分析报告生成成功", analysis.data)
       const resultDiv = document.getElementById("analysisResult")
       resultDiv.innerHTML = `
                 <h3>学情分析报告</h3>
@@ -1537,34 +1583,34 @@ async function loadStudentsForAnalysis() {
 // 导出资源
 async function exportResource(lessonPlanId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/exportResource?lessonPlanId=${lessonPlanId}`);
+    const response = await fetch(`${API_BASE_URL}/admin/exportResource?lessonPlanId=${lessonPlanId}`)
 
     if (!response.ok) {
-      showNotification("导出失败，请稍后重试", "error");
-      return;
+      showNotification("导出失败，请稍后重试", "error")
+      return
     }
 
-    const contentType = response.headers.get("content-type");
+    const contentType = response.headers.get("content-type")
     if (!contentType || !contentType.includes("application/pdf")) {
-      const text = await response.text(); // 或者 json()
-      console.error("非 PDF 响应:", text);
-      showNotification("导出失败，服务器返回错误", "error");
-      return;
+      const text = await response.text() // 或者 json()
+      console.error("非 PDF 响应:", text)
+      showNotification("导出失败，服务器返回错误", "error")
+      return
     }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `lesson_plan_${lessonPlanId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    showNotification("资源导出成功", "success");
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `lesson_plan_${lessonPlanId}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    showNotification("资源导出成功", "success")
   } catch (error) {
-    console.error("导出资源失败:", error);
-    showNotification("网络错误，请稍后重试", "error");
+    console.error("导出资源失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
   }
 }
 // 删除用户
@@ -2600,4 +2646,362 @@ function truncateMarkdown(markdown, length = 200) {
   div.innerHTML = html
   const text = div.textContent || div.innerText || ""
   return text.length > length ? text.substring(0, length) + "..." : text
+}
+
+// 加载教师生成的问题
+async function loadTeacherQuestions() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestionsByUserId`)
+    if (response.ok) {
+      const result = await response.json()
+      const questions = result.data || result
+      renderTeacherQuestionsGrid(questions)
+    }
+  } catch (error) {
+    console.error("加载教师问题失败:", error)
+  }
+}
+
+// 渲染教师问题网格
+function renderTeacherQuestionsGrid(questions) {
+  const grid = document.getElementById("teacherQuestionsGrid")
+  if (!grid) return
+
+  grid.innerHTML = ""
+
+  if (questions.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-question-circle"></i>
+        <h3>暂无生成的问题</h3>
+        <p>开始生成问题后会显示在这里</p>
+      </div>
+    `
+    return
+  }
+
+  questions.forEach((question) => {
+    const card = document.createElement("div")
+    card.className = "question-card card-hover"
+    card.innerHTML = `
+      <h3>问题 #${question.questionId}</h3>
+      <p><strong>课程:</strong> ${question.courseName || "未知课程"}</p>
+      <p><strong>知识点:</strong> ${question.knowledgePoint}</p>
+      <p class="text-truncate-3">${marked.parse(question.questionText)}</p>
+      <div class="card-actions">
+        <button class="btn btn-primary btn-sm" onclick="viewTeacherQuestion(${question.questionId})">
+          <i class="fas fa-eye"></i> 查看
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="editTeacherQuestion(${question.questionId})">
+          <i class="fas fa-edit"></i> 编辑
+        </button>
+      </div>
+    `
+    grid.appendChild(card)
+  })
+}
+
+// 加载学生可做的题目（教师生成的）
+async function loadStudentPracticeQuestions() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/teacher/getAllQuestionsByUserId`)
+    if (response.ok) {
+      const result = await response.json()
+      const questions = result.data || result
+      renderStudentPracticeGrid(questions)
+    }
+  } catch (error) {
+    console.error("加载练习题目失败:", error)
+  }
+}
+
+// 渲染学生练习题目网格
+function renderStudentPracticeGrid(questions) {
+  const grid = document.getElementById("studentPracticeGrid")
+  if (!grid) return
+
+  grid.innerHTML = ""
+
+  if (questions.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-question-circle"></i>
+        <h3>暂无练习题目</h3>
+        <p>教师生成题目后会显示在这里</p>
+      </div>
+    `
+    return
+  }
+
+  questions.forEach((question) => {
+    const card = document.createElement("div")
+    card.className = "question-card card-hover"
+    card.innerHTML = `
+      <h3>题目 #${question.questionId}</h3>
+      <p><strong>知识点:</strong> ${question.knowledgePoint}</p>
+      <div class="question-preview">${marked.parse(question.questionText.substring(0, 100) + "...")}</div>
+      <div class="card-actions">
+        <button class="btn btn-primary" onclick="startPracticeQuestion(${question.questionId})">
+          <i class="fas fa-play"></i> 开始答题
+        </button>
+      </div>
+    `
+    grid.appendChild(card)
+  })
+}
+
+// 开始答题
+function startPracticeQuestion(questionId) {
+  // 找到对应的题目
+  fetch(`${API_BASE_URL}/teacher/getAllQuestionsByUserId`)
+      .then((response) => response.json())
+      .then((result) => {
+        const questions = result.data || result
+        const question = questions.find((q) => q.questionId === questionId)
+        if (question) {
+          showPracticeQuestionModal(question)
+        }
+      })
+      .catch((error) => {
+        console.error("获取题目详情失败:", error)
+        showNotification("获取题目失败", "error")
+      })
+}
+
+// 显示答题模态框
+function showPracticeQuestionModal(question) {
+  const content = `
+    <div class="practice-question-modal">
+      <h3>题目 #${question.questionId}</h3>
+      <div class="question-info">
+        <p><strong>知识点:</strong> ${question.knowledgePoint}</p>
+      </div>
+      <div class="question-content">
+        ${marked.parse(question.questionText)}
+      </div>
+      <form id="practiceAnswerForm">
+        <div class="form-group">
+          <label for="practiceAnswer">您的答案:</label>
+          <textarea id="practiceAnswer" name="answer" rows="6" placeholder="请输入您的答案..." required></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+          <button type="submit" class="btn btn-primary">提交答案</button>
+        </div>
+      </form>
+    </div>
+  `
+
+  showModal("答题", content)
+
+  document.getElementById("practiceAnswerForm").addEventListener("submit", async (e) => {
+    e.preventDefault()
+    const answer = document.getElementById("practiceAnswer").value.trim()
+
+    if (!answer) {
+      showNotification("请输入答案", "warning")
+      return
+    }
+
+    try {
+      showLoading(true)
+      const response = await fetch(
+          `${API_BASE_URL}/student/submitPractice?questionId=${question.questionId}&submittedAnswer=${encodeURIComponent(answer)}`,
+      )
+
+      if (response.ok) {
+        const result = await response.json()
+        showNotification("答案提交成功", "success")
+        closeModal()
+        // 可以显示结果或刷新记录
+        loadSubmitHistory()
+      } else {
+        showNotification("提交失败，请稍后重试", "error")
+      }
+    } catch (error) {
+      console.error("提交答案失败:", error)
+      showNotification("网络错误，请稍后重试", "error")
+    } finally {
+      showLoading(false)
+    }
+  })
+}
+
+// 加载提交记录
+async function loadSubmitHistory() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/student/getSubmitHistory`)
+    if (response.ok) {
+      const result = await response.json()
+      const history = result.data || result
+      renderSubmitHistory(history)
+    }
+  } catch (error) {
+    console.error("加载提交记录失败:", error)
+  }
+}
+
+// 渲染提交记录
+function renderSubmitHistory(history) {
+  const container = document.getElementById("submitHistoryList")
+  if (!container) return
+
+  container.innerHTML = ""
+
+  if (history.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-clipboard-check"></i>
+        <h3>暂无提交记录</h3>
+        <p>完成答题后记录会显示在这里</p>
+      </div>
+    `
+    return
+  }
+
+  history.forEach((item) => {
+    const historyItem = document.createElement("div")
+    historyItem.className = "history-item"
+    historyItem.innerHTML = `
+      <h4>题目 #${item.questionId}</h4>
+      <p><strong>知识点:</strong> ${item.knowledgePoint || "未知"}</p>
+      <div class="question-text">${marked.parse(item.questionText || "")}</div>
+      <p><strong>您的答案:</strong></p>
+      <div class="answer-text">${marked.parse(item.submittedAnswer || "")}</div>
+      <p><strong>结果:</strong> <span class="${item.isCorrect ? "text-success" : "text-danger"}">${item.isCorrect ? "正确" : "错误"}</span></p>
+      ${item.feedback ? `<p><strong>反馈:</strong> ${marked.parse(item.feedback)}</p>` : ""}
+      <p class="time">${formatDate(item.submitTime)}</p>
+    `
+    container.appendChild(historyItem)
+  })
+}
+
+// 生成PPT
+async function generatePPT() {
+  const subject = document.getElementById("pptSubject").value.trim()
+
+  if (!subject) {
+    showNotification("请输入PPT主题", "warning")
+    return
+  }
+
+  showLoading(true)
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/teacher/generatePPT?subject=${encodeURIComponent(subject)}`)
+
+    if (response.ok) {
+      const pptContent = await response.text()
+      showPPTPreview(pptContent, subject)
+      showNotification("PPT生成成功", "success")
+    } else {
+      showNotification("PPT生成失败，请稍后重试", "error")
+    }
+  } catch (error) {
+    console.error("生成PPT失败:", error)
+    showNotification("网络错误，请稍后重试", "error")
+  } finally {
+    showLoading(false)
+  }
+}
+
+// 显示PPT预览
+function showPPTPreview(content, subject) {
+  const previewDiv = document.getElementById("pptPreview")
+  if (previewDiv) {
+    previewDiv.innerHTML = `
+      <div class="ppt-preview-card">
+        <h3>PPT预览 - ${subject}</h3>
+        <div class="ppt-content">
+          ${marked.parse(content)}
+        </div>
+        <div class="ppt-actions">
+          <button class="btn btn-primary" onclick="downloadPPT('${subject}', \`${content.replace(/`/g, "\\`")}\`)">
+            <i class="fas fa-download"></i> 下载PPT
+          </button>
+        </div>
+      </div>
+    `
+  }
+}
+
+// 下载PPT
+function downloadPPT(subject, content) {
+  const blob = new Blob([content], { type: "text/plain" })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `${subject}_PPT.txt`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+  showNotification("PPT下载成功", "success")
+}
+
+// 上传视频
+async function uploadVideo() {
+  const fileInput = document.getElementById("videoInput")
+  const file = fileInput.files[0]
+
+  if (!file) {
+    showNotification("请选择视频文件", "warning")
+    return
+  }
+
+  // 检查文件类型
+  const allowedTypes = ["video/mp4", "video/avi", "video/mov", "video/wmv"]
+  if (!allowedTypes.includes(file.type)) {
+    showNotification("只支持MP4、AVI、MOV、WMV格式的视频文件", "error")
+    return
+  }
+
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const progressDiv = document.getElementById("videoUploadProgress")
+  const progressFill = document.getElementById("videoProgressFill")
+  const progressText = document.getElementById("videoProgressText")
+
+  progressDiv.style.display = "block"
+  progressFill.style.width = "0%"
+  progressText.textContent = "上传中..."
+
+  try {
+    const xhr = new XMLHttpRequest()
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        const percentComplete = (e.loaded / e.total) * 100
+        progressFill.style.width = percentComplete + "%"
+        progressText.textContent = `上传中... ${Math.round(percentComplete)}%`
+      }
+    })
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status === 200) {
+        progressText.textContent = "上传成功！正在处理视频..."
+        showNotification("视频上传成功，正在进行向量化处理", "success")
+        setTimeout(() => {
+          progressDiv.style.display = "none"
+          fileInput.value = ""
+        }, 3000)
+      } else {
+        showNotification("上传失败，请稍后重试", "error")
+        progressDiv.style.display = "none"
+      }
+    })
+
+    xhr.addEventListener("error", () => {
+      showNotification("上传失败，请稍后重试", "error")
+      progressDiv.style.display = "none"
+    })
+
+    xhr.open("POST", `${API_BASE_URL}/teacher/uploadVideo`)
+    xhr.send(formData)
+  } catch (error) {
+    console.error("视频上传失败:", error)
+    showNotification("上传失败，请稍后重试", "error")
+    progressDiv.style.display = "none"
+  }
 }

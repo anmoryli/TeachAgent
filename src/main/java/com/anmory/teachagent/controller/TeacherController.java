@@ -148,6 +148,27 @@ public class TeacherController {
         return true;
     }
 
+    // 上传视频然后向量化
+    @RequestMapping("uploadVideo")
+    public boolean uploadVideoAndEmbedding(MultipartFile file) {
+        // 先把文件保存起来
+        String filePath = "/user/local/nginx/files/teach/" + file.getOriginalFilename();
+        File dir = new File("/user/local/nginx/files/teach/");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+            fos.write(file.getBytes());
+            log.info("视频上传成功");
+        } catch (IOException e) {
+            log.error("视频上传失败: {}", e.getMessage(), e);
+            return false;
+        }
+
+        // 调用接口转文字然后向量化
+        return ragService.uploadVideo("http://anmory.com:91" + filePath);
+    }
+
     // 生成ppt接口
     @RequestMapping("/generatePPT")
     public String generatePPT(String subject) throws IOException {

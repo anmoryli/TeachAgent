@@ -59,6 +59,7 @@
                 <li><a href="#" data-section="admin-users"><i class="fas fa-users"></i> 用户管理</a></li>
                 <li><a href="#" data-section="admin-resources"><i class="fas fa-folder"></i> 资源管理</a></li>
                 <li><a href="#" data-section="admin-analytics"><i class="fas fa-chart-bar"></i> 数据分析</a></li>
+                <li><a href="#" data-section="admin-visualization"><i class="fas fa-chart-pie"></i> 数据可视化</a></li>
                 <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
             </ul>
         </nav>
@@ -199,31 +200,18 @@
                         <i class="fas fa-download"></i> 导出资源
                     </button>
                 </div>
-                <div class="table-container">
-                    <table id="resourcesTable" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>资源ID</th>
-                            <th>标题</th>
-                            <th>类型</th>
-                            <th>创建时间</th>
-                            <th>操作</th>
-                        </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                <div class="resources-container">
+                    <div class="resources-grid" id="resourcesGrid"></div>
                 </div>
             </section>
 
             <!-- 数据分析 -->
             <section id="admin-analytics" class="content-section">
                 <h2>数据分析</h2>
-                <div class="analytics-tabs">
-                    <button class="tab-btn active" data-tab="student-analysis">学生分析</button>
-                    <button class="tab-btn" data-tab="teacher-analysis">教师分析</button>
-                    <button class="tab-btn" data-tab="learning-effect">学习效果</button>
-                </div>
-                <div id="student-analysis" class="tab-content active">
+
+                <!-- 学生分析 -->
+                <div class="analysis-section">
+                    <h3><i class="fas fa-user-graduate"></i> 学生学习分析</h3>
                     <div class="table-container">
                         <table id="studentAnalysisTable" class="data-table">
                             <thead>
@@ -239,7 +227,10 @@
                         </table>
                     </div>
                 </div>
-                <div id="teacher-analysis" class="tab-content">
+
+                <!-- 教师分析 -->
+                <div class="analysis-section">
+                    <h3><i class="fas fa-chalkboard-teacher"></i> 教师效果分析</h3>
                     <div class="table-container">
                         <table id="teacherAnalysisTable" class="data-table">
                             <thead>
@@ -256,7 +247,10 @@
                         </table>
                     </div>
                 </div>
-                <div id="learning-effect" class="tab-content">
+
+                <!-- 学习效果分析 -->
+                <div class="analysis-section">
+                    <h3><i class="fas fa-chart-line"></i> 学习效果分析</h3>
                     <div class="table-container">
                         <table id="learningEffectTable" class="data-table">
                             <thead>
@@ -270,6 +264,37 @@
                             </thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 数据可视化 -->
+            <section id="admin-visualization" class="content-section">
+                <h2>数据可视化</h2>
+                <div class="visualization-grid">
+                    <div class="chart-card">
+                        <h3>用户分布图</h3>
+                        <div id="userDistributionChart" class="chart-container">
+                            <canvas id="userPieChart" width="300" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>学习活跃度</h3>
+                        <div id="activityChart" class="chart-container">
+                            <div class="activity-bars" id="activityBars"></div>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>答题正确率趋势</h3>
+                        <div id="correctRateTrend" class="chart-container">
+                            <div class="trend-line" id="trendLine"></div>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>热门知识点</h3>
+                        <div id="popularTopics" class="chart-container">
+                            <div class="topic-list" id="topicList"></div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -289,7 +314,10 @@
                 <li><a href="#" data-section="teacher-courses"><i class="fas fa-book"></i> 课程管理</a></li>
                 <li><a href="#" data-section="teacher-lessons"><i class="fas fa-clipboard-list"></i> 教学设计</a></li>
                 <li><a href="#" data-section="teacher-questions"><i class="fas fa-question-circle"></i> 题目管理</a></li>
+                <li><a href="#" data-section="teacher-my-questions"><i class="fas fa-list-alt"></i> 我的问题</a></li>
                 <li><a href="#" data-section="teacher-materials"><i class="fas fa-upload"></i> 资料上传</a></li>
+                <li><a href="#" data-section="teacher-video"><i class="fas fa-video"></i> 视频上传</a></li>
+                <li><a href="#" data-section="teacher-ppt"><i class="fas fa-file-powerpoint"></i> PPT生成</a></li>
                 <li><a href="#" data-section="teacher-analytics"><i class="fas fa-chart-line"></i> 学情分析</a></li>
                 <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
             </ul>
@@ -341,6 +369,17 @@
                 </div>
             </section>
 
+            <!-- 我的问题 -->
+            <section id="teacher-my-questions" class="content-section">
+                <div class="section-header">
+                    <h2>我生成的问题</h2>
+                    <button class="btn btn-secondary" onclick="loadTeacherQuestions()">
+                        <i class="fas fa-refresh"></i> 刷新
+                    </button>
+                </div>
+                <div class="questions-grid" id="teacherQuestionsGrid"></div>
+            </section>
+
             <!-- 资料上传 -->
             <section id="teacher-materials" class="content-section">
                 <h2>资料上传</h2>
@@ -354,6 +393,47 @@
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
                     <p id="progressText">上传中...</p>
+                </div>
+            </section>
+
+            <!-- 视频上传 -->
+            <section id="teacher-video" class="content-section">
+                <h2>视频上传与处理</h2>
+                <div class="video-upload-container">
+                    <div class="upload-area" onclick="document.getElementById('videoInput').click()">
+                        <i class="fas fa-video"></i>
+                        <p>点击选择视频文件上传</p>
+                        <small>支持MP4、AVI、MOV、WMV格式</small>
+                        <input type="file" id="videoInput" accept="video/*" style="display: none;">
+                    </div>
+                    <div class="upload-actions">
+                        <button class="btn btn-primary" onclick="uploadVideo()">
+                            <i class="fas fa-upload"></i> 开始上传
+                        </button>
+                    </div>
+                    <div class="upload-progress" id="videoUploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="videoProgressFill"></div>
+                        </div>
+                        <p id="videoProgressText">上传中...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PPT生成 -->
+            <section id="teacher-ppt" class="content-section">
+                <h2>PPT生成</h2>
+                <div class="ppt-generator">
+                    <div class="ppt-form">
+                        <div class="form-group">
+                            <label for="pptSubject">PPT主题</label>
+                            <input type="text" id="pptSubject" placeholder="请输入PPT主题，如：机器学习基础">
+                        </div>
+                        <button class="btn btn-primary" onclick="generatePPT()">
+                            <i class="fas fa-magic"></i> 生成PPT
+                        </button>
+                    </div>
+                    <div id="pptPreview" class="ppt-preview"></div>
                 </div>
             </section>
 
@@ -388,7 +468,10 @@
             <ul class="nav-menu">
                 <li><a href="#" data-section="student-ask"><i class="fas fa-question"></i> 在线提问</a></li>
                 <li><a href="#" data-section="student-practice"><i class="fas fa-pencil-alt"></i> 练习测试</a></li>
-                <li><a href="#" data-section="student-history"><i class="fas fa-history"></i> 学习记录</a></li>
+                <li><a href="#" data-section="student-do-questions"><i class="fas fa-tasks"></i> 做题练习</a></li>
+                <li><a href="#" data-section="student-question-history"><i class="fas fa-comments"></i> 提问记录</a></li>
+                <li><a href="#" data-section="student-practice-history"><i class="fas fa-history"></i> 练习记录</a></li>
+                <li><a href="#" data-section="student-submit-history"><i class="fas fa-clipboard-check"></i> 提交记录</a></li>
                 <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
             </ul>
         </nav>
@@ -448,19 +531,29 @@
                 <div class="practice-result" id="practiceResult" style="display: none;"></div>
             </section>
 
-            <!-- 学习记录 -->
-            <section id="student-history" class="content-section">
-                <h2>学习记录</h2>
-                <div class="history-tabs">
-                    <button class="tab-btn active" data-tab="question-history">提问记录</button>
-                    <button class="tab-btn" data-tab="practice-history">练习记录</button>
-                </div>
-                <div id="question-history" class="tab-content active">
-                    <div class="history-list" id="questionHistoryList"></div>
-                </div>
-                <div id="practice-history" class="tab-content">
-                    <div class="history-list" id="practiceHistoryList"></div>
-                </div>
+            <!-- 做题练习 -->
+            <section id="student-do-questions" class="content-section">
+                <h2>做题练习</h2>
+                <p class="section-description">这里是教师生成的题目，您可以选择题目进行练习</p>
+                <div class="questions-grid" id="studentPracticeGrid"></div>
+            </section>
+
+            <!-- 提问记录 -->
+            <section id="student-question-history" class="content-section">
+                <h2>提问记录</h2>
+                <div class="history-list" id="questionHistoryList"></div>
+            </section>
+
+            <!-- 练习记录 -->
+            <section id="student-practice-history" class="content-section">
+                <h2>练习记录</h2>
+                <div class="history-list" id="practiceHistoryList"></div>
+            </section>
+
+            <!-- 提交记录 -->
+            <section id="student-submit-history" class="content-section">
+                <h2>提交记录</h2>
+                <div class="history-list" id="submitHistoryList"></div>
             </section>
         </main>
     </div>

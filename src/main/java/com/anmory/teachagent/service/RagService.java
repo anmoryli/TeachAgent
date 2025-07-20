@@ -9,7 +9,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -85,5 +84,55 @@ public class RagService {
 
         // 只返回第一个匹配
         return relevant.get(0).getAsJsonObject().get("content").getAsString();
+    }
+
+    public boolean uploadVideo(String url) {
+        log.info("RAG上传视频，url:" + url);
+        String encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
+        String finalUrl = baseUrl + "/video-to-text?file=" + encodedUrl;
+
+        // 创建okhttp客户端
+        OkHttpClient httpClient = new OkHttpClient();
+        // 构建请求体
+        Request request = new Request.Builder()
+                .url(finalUrl)
+                .get()
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("请求失败，状态码: " + response);
+            }
+            // 获取响应体
+            String responseBody = response.body().string();
+            System.out.println("原始响应"+responseBody);
+
+            // 使用gson解析json
+            Gson gson = new Gson();
+            JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+            JsonArray relevant = jsonResponse.getAsJsonArray("text");
+            System.out.println("匹配结果"+relevant);
+            // 向量化
+            String text = relevant.get(0).getAsString();
+            String finalUrlVideo = baseUrl + "/text_embedding_text?text=" + text;
+
+            // 创建okhttp客户端
+            OkHttpClient httpClient2 = new OkHttpClient();
+
+            // 构建请求
+            Request request2 = new Request.Builder()
+                    .url(finalUrlVideo)
+                    .get()
+                    .build();
+
+            Response response2 = httpClient2.newCall(request2).execute();
+            if(!response.isSuccessful()) {
+                throw new IOException("请求失败，状态码: " + response);
+            }
+            return true;
+        } catch (IOException e) {
+            log.error("上传视频失败", e);
+            return false;
+        }
     }
 }
